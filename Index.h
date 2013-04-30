@@ -79,7 +79,7 @@ public:
     int i = key.hash((uintptr_t)this)%bufsize;
     Buf buf = items;
     if(val == 99){
-      cout << format("buf[%d] = %x\n",i,&buf[i]);
+      cout << format(" &buf[0] = %x, i = %d\n",&buf[0], i);
     }
  
     while(buf[i].value >= 0){ // slot occupied (collision)
@@ -87,9 +87,9 @@ public:
 	buf[i].next = Buf(bufsize); // allocate new buffer
       }
       buf = buf[i].next;
-      i = key.hash((uintptr_t)&buf)%bufsize;
+      i = key.hash((uintptr_t)&buf[0])%bufsize;
       if(val == 99){
-	cout << format("buf[%d] = %x\n",i,&buf[i]);
+	cout << format("&buf[0] = %x, i = %d\n",&buf[0], i);
       }
     }
     buf[i].key = key;
@@ -115,9 +115,9 @@ public:
       if(buf[i].key == key) return &buf[i]; // found it
       if(buf[i].next.len() == 0) break; // not found and there's no continuation
       buf = buf[i].next; // search the next index 
-      i = key.hash((uintptr_t)&buf)%bufsize;
-      if("key" == String("99")){
-	cout << format("buf[%d] = %x\n",i,&buf[i]);
+      i = key.hash((uintptr_t)&buf[0])%bufsize;
+      if(key == String("99")){
+	cout << format("&buf[0] = %x, i = %d\n",&buf[0], i);
       }
  
     }
