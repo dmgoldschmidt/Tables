@@ -87,98 +87,113 @@ uint32_t String::hash(uintptr_t salt) const{ // simple hash function
 //template <typename KEY>
 //class Index;
 
-template <typename KEY>
-struct KeyItem {
-  typedef Array<KeyItem<KEY> > Buf;
-  Buf next; // initially an empty Array (no allocation) 
-  int value; // -1 for unoccupied
+template <typename KEY, typename VALUE = unsigned int>
+struct KeyValue {
+  bool occupied;  
+  VALUE value; // -1 for unoccupied
   KEY key;
-  KeyItem(void) : value(-1) {}
-  KeyItem(const KEY& k, int v) : value(v), key(k) {} 
+  KeyValue(void) : occupied(false) {}
+  KeyValue(const KEY& k, const VALUE& v) : value(v), key(k), occupied(true) {} 
 };
 
-template<typename KEY>
+template<typename KEY, typename VALUE = unsigned int>
 class Index {
-  typedef Array<KeyItem<KEY> > Buf;
-  int bufsize;
-  Buf items;
+  typedef KeyValue<KEY,VALUE> KV;
+  Array<KV> items;
+  Index* next;
+  Index* current_buf;
+  int current_item;
+
+  Index(const Index& i); // no copy constructor
+  Index& operator=(const Index& i); // no assignment
+
+  // get_slot is private because it can produce duplicate keys
+  KV& get_slot(const KEY& key){ // find an empty slot for key
+    int bufsize = items.len();
+    int i = key.hash((uintptr_t)&items[0])%bufsize;
+    for (int j = 0; j < bufsize/10; j++){
+      int k = (i+j)%bufsize; // wrap-around search
+      if(!items[k].occupied){ // found an empty slot
+	items[k].key = key;
+	items[k].occupied = true;
+	return items[k];
+      }
+    }
+      // nothing available in this buffer.  On to the next
+    if(next == (Index*)NULL){ //make new buffer if needed
+	next = new Index(bufsize); // allocate new buffer
+    }
+    return next->get_slot(key); // recurse
+  }
+
 
 public:
-  Index(unsigned b) : bufsize(b){
-    items.reset(bufsize); // allocate Array (and auto-initialize KeyItems)
-  }  
+  Index(unsigned b = 100) : items(b), next((Index*)NULL), current_buf(this), current_item(0) {}
+  ~Index(void){ // recursively delete all the buffers
+    if(next != (Index*)NULL) delete next;
+  }
   // methods
 
-  void add(const KEY& key, int val){
-    int i = key.hash((uintptr_t)this)%bufsize;
-    Buf buf = items;
-    //    if(val == 99){
-    //      cout << format(" &buf[0] = %x, i = %d\n",&buf[0], i);
-    //    }
- 
-    while(1){ 
-      for (int j = 0; j < bufsize/10; j++){
-	int k = (i+j)%bufsize; // wrap-around search
-	if(buf[k].value < 0){ // found an empty slot
-	  buf[k].key = key;
-	  buf[k].value = val;
-	  return;
-	}
-      }
-	  
-      // nothing available in this buffer.  On to the next
-      if(buf[i].next.len() == 0){ //make new buffer if there isn't one already
-	buf[i].next.reset(bufsize); // allocate new buffer
-	cout << format("collision at i = %d, buffer %x\n",i,&buf[0]);
-      }
-      buf = buf[i].next;
-      i = key.hash((uintptr_t)&buf[0])%bufsize;
-      //      if(val == 99){
-      //	cout << format("&buf[0] = %x, i = %d\n",&buf[0], i);
-      //      }
+  KV* find(const KEY& key){
+    int bufsize = items.len();
+    int i = key.hash((uintptr_t)&items[0])%bufsize;
+    for (int j = 0; j < bufsize/10;j++){
+      int k = (i+j)%bufsize; // wrap-around search
+      if(items[k].occupied && items[k].key == key) return &items[k]; // found it
     }
+  
+    if(next == (Index*)NULL) return (KV*)NULL; 
+    return next->find(key);
+  }
+
+  bool has(const KEY& key){
+    return (find(key) != (KV*)NULL?  true:false);
   }
 
   void del(const KEY& key){
-    KeyItem<KEY>* key_item = find(key);
-    if(key_item != (KeyItem<KEY>*)NULL){
-      key_item->value = -1; // delete it
+    KV* p = find(key);
+    if(p != (KV*)NULL){
+      p->occupied = false;
     }
+  }
+  
+  VALUE& operator[](const KEY& key){
+    KV* p = find(key);
+    if( p != (KV*)NULL) return p->value;
+    return get_slot(key).value;
   }
 
-  int find(const KEY& key){
-    int i = key.hash((uintptr_t)this)%bufsize;
-    Buf buf = items;
-      
-    //    if(key == String("99")){
-    //      cout << format("buf[%d] = %x\n",i,&buf[i]);
-    //    }
- 
-    while(buf[i].value >= 0){ // slot occupied
-      for (int j = 0; j < bufsize/10;j++){
-	int k = (i+j)%bufsize; // wrap-around search
-	if(buf[k].key == key) return buf[k].value; // found it
-      }
-      if(buf[i].next.len() == 0) break; // not found and there's no continuation
-      buf = buf[i].next; // search the next index 
-      i = key.hash((uintptr_t)&buf[0])%bufsize;
-      //      if(key == String("99")){
-      //	cout << format("&buf[0] = %x, i = %d\n",&buf[0], i);
-      //      }
- 
-    }
-    return -1; // not there
+  const KV& start(void){
+    current_buf = this;
+    current_item = 0;
+    if(items[0].occupied) return items[0]; 
+    return step();
   }
-  void dump(void){dump(items);}
-  void dump(Buf b){ // recursively called
+
+  const KV& step(void){ // step to next unoccupied slot
+     do{
+       if(end())break;
+       current_item++;
+       if(current_item >= items.len()){
+	 current_item = 0;
+	 current_buf = current_buf->next;
+       }
+    }while(!current_buf->items[current_item].occupied);
+    return current_buf->items[current_item];
+  }
+
+  bool end(void){
+    return (current_item == items.len()-1 && current_buf->next == (Index*)NULL);
+  }
+  //*****************
+
+  void dump(void){
     int nitems = 0;
-    for(int i = 0;i < bufsize;i++){
-      if(b[i].value >= 0){
-	nitems++;
-	if(b[i].next.len() != 0) dump(b[i].next);
-      }
+    for(int i = 0;i < items.len();i++){
+      if(items[i].occupied) nitems++;
     }
-    cout << format("occupancy for %x: %f\n",&b[0],nitems*1.0/bufsize);
+    cout << format("occupancy for %x: %f\n",this,nitems*1.0/items.len());
+    if(next != (Index*)NULL)next->dump();
   } 
 };
 #endif
