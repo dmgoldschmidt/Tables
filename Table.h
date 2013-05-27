@@ -1,10 +1,10 @@
 #ifndef TABLE_H
 #define TABLE_H
 #include <iostream>
+//#include "util.h"
 #include "Index.h"
 #include "Array.h"
 #include "Matrix.h"
-
 using namespace std;
 
 // struct Col {
@@ -30,6 +30,14 @@ struct TableEntry {
   TableEntry(String& x) : d(nullptr), s(&x) {}
   void operator()(double& x){d = &x; s = nullptr;}
   void operator()(String& x){d = nullptr;s = &x;}
+  TableEntry& operator=(const String& ss){
+    *s = ss;
+    return *this;
+  }
+  TableEntry& operator=(const double dd){
+    *d = dd;
+    return *this;
+  }
   
   operator double&(void) {
     if(d != nullptr) return *d;
@@ -70,30 +78,41 @@ struct Pair{
   Pair(T xx, T yy) : x(xx), y(yy) {}
 };
 
-class Table {
+template<typename T>
+ostream& operator<<(ostream& os, const Pair<T>& p){
+  os << "("<<p.x<<","<<p.y<<")";
+  return os;
+}
+
+struct Table {
   int nrows; // no. of rows
   int ndbl; // no. of double columns
   int nstr; // no. of String columns
   Matrix<double> Doubles;
   Matrix<String> Strings;
   Index<String,Pair<int> > columns;
-  TableEntry tmp_ref;
+  //  TableEntry tmp_ref;
 public:
   Table(int nr,Array<String>names,Array<int>types){
     nrows = nr;
     nstr = ndbl = 0;
 
     for(int i = 0;i < names.len();i++){
-       if(types[i] == 0)
+      if(types[i] == 0){
 	 columns[names[i]] = Pair<int>(nstr++,types[i]);
-       else 
-	 columns[names[i]] = Pair<int>(ndbl++,types[i]);
+	 cout << format("Table: column %d: %s(string)\n",i,names[i].c_str());
+      }
+      else{ 
+	columns[names[i]] = Pair<int>(ndbl++,types[i]);
+	cout << format("Table: column %d: %s(double)\n",i,names[i].c_str());
+      }
     }
-    Doubles.reset(nrows,ndbl,0);
-    Strings.reset(nrows,nstr,"");
+    Doubles.reset(nrows,ndbl);
+    Strings.reset(nrows,nstr);
   }
-  TableEntry& operator()(int i, String& col){
-    Pair<int> p = columns[col];
+  TableEntry operator()(int i, String& col){
+    TableEntry tmp_ref;
+    Pair<int> p = columns[col]; // should check that col exists
     if(p.y == 0)
       tmp_ref(Strings(i,p.x));
     else
