@@ -1,7 +1,7 @@
 #ifndef TABLE_H
 #define TABLE_H
 #include <iostream>
-//#include "util.h"
+#include "util.h"
 #include "Index.h"
 #include "Array.h"
 #include "Matrix.h"
@@ -41,26 +41,19 @@ struct TableEntry {
   
   operator double&(void) {
     if(d != nullptr) return *d;
-    throw "Object type error\n";
+    throw "TableEntry object type error\n";
   }
 
   operator String&(void) {
     if(s != nullptr) return *s;
-    throw "Object type error\n";
+    throw "TableEntry object type error\n";
   }
 
-  // Obj& operator=(String& x){
-  //   s = &x;
-  //   d = nullptr;
-  //   return *this;
-  // }
-
-  // Obj& operator=(double& x){
-  //   d = &x;
-  //   s = nullptr;
-  //   return *this;
-  // }
-  
+  const char* c_str(void){
+    if(s != nullptr)return s->c_str();
+    if(d != nullptr)return String(*d).c_str();
+    throw "TableEntry object type error\n";
+  }
 };
 
 ostream& operator<<(ostream& os, const TableEntry& x){
