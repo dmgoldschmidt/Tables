@@ -19,7 +19,7 @@ public:
   int nf; // no. of fields found in current record
   string line; // equivalent to $0
 
- Awk(char fs = ' ', char rs0 = '\n') : split(fs), rs(rs0), nr(0), len(0){}
+ Awk(char fs = ' ', char rs0 = '\n') : len(0),split(fs), rs(rs0), nr(0){}
   ~Awk(void){
     if(len > 0)delete[] record;
   }

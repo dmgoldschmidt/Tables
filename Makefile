@@ -8,5 +8,5 @@ Awk.o:	Awk.h Awk.cc util.o
 	g++ $(CFLAGS) -c -o Awk.o Awk.cc
 test_Table: test_Table.cc Table.h Index.h Array.h util.o Awk.o
 	 g++ $(CFLAGS) -o test_Table test_Table.cc util.o Awk.o  
-test_Index: Index.cc Index.h Array.h
-	    g++ $(CFLAGS) -o test_Index Index.cc
+test_Index: Index.cc Index.h Array.h util.h
+	    g++ $(CFLAGS) -o test_Index Index.cc util.o

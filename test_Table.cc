@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include "Table.h"
 #include "Awk.h"
+#include "Index.h"
 using namespace std;
 
 // include <sstream>
@@ -27,9 +28,8 @@ using namespace std;
 //   }
 
 int type(char* str){ // get type of string field
-  double result;
-  char* endptr;
-  result = strtod(str,&endptr);
+   char* endptr;
+  strtod(str,&endptr);
   return endptr != str;
 }
 
@@ -112,12 +112,14 @@ int main(int argc, char** argv){
   //  cout << "kv_test: "<<kv_test<<endl;
   int i = 0;
   for(auto it = t.columns.begin(); it != t.columns.end(); it++){
-    cout << *it<<endl;
-    if(i++ >= 5)break;
+    cout << *it << endl;
   }
+  cout <<"****** begin auto& : syntax\n\n";
   for(auto& it : t.columns){
-    cout << it<<endl;
+    cout << it << endl;
   }
+
+
   Table t1 = csv_read("../data",10);
   String left("left");
   for(int i = 0;i < 10;i++){
