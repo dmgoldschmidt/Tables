@@ -5,6 +5,8 @@
 #include "Index.h"
 #include "Array.h"
 #include "Matrix.h"
+//extern template class Matrix<String>;
+//extern template class Matrix<double>;
 using namespace std;
 
 // struct Col {
@@ -77,45 +79,89 @@ ostream& operator<<(ostream& os, const Pair<T>& p){
   return os;
 }
 
-struct Table {
-  int nrows; // no. of rows
+class Table;
+class TableView;
+
+
+class TableRow : public std::iterator<std::forward_iterator_tag, TableRow>{
+  Table* table;
+  int row;
+public:
+  //  TableRow(void) : table(nullptr), row(0) {}
+  TableRow(Table* t, int r = 0) : table(t), row(r)  {}
+  TableRow* operator->(void){return this;}
+  TableRow& operator*(void){return *this;}
+  TableRow& operator++(void);
+  TableRow operator++(int);
+  
+  bool operator==(const TableRow& r){
+    if(table != r.table) return false;
+    if(row != r.row) return false;
+    return true;
+  }
+  bool operator!=(const TableRow& it){return !operator==(it);}
+  TableEntry operator[](String& col);
+};
+
+class Table {
+  friend class TableRow;
+  int _nrows; // no. of rows
   int ndbl; // no. of double columns
   int nstr; // no. of String columns
   Matrix<double> Doubles;
   Matrix<String> Strings;
   Index<String,Pair<int> > columns;
-  //  TableEntry tmp_ref;
-public:
-  Table(int nr,Array<String>names,Array<int>types){
-    nrows = nr;
-    nstr = ndbl = 0;
 
-    for(int i = 0;i < names.len();i++){
-      if(types[i] == 0){
-	 columns[names[i]] = Pair<int>(nstr++,types[i]);
-	 cout << format("Table: column %d: %s(string)\n",i,names[i].c_str());
-      }
-      else{ 
-	columns[names[i]] = Pair<int>(ndbl++,types[i]);
-	cout << format("Table: column %d: %s(double)\n",i,names[i].c_str());
-      }
-    }
-    Doubles.reset(nrows,ndbl);
-    Strings.reset(nrows,nstr);
-  }
-  TableEntry operator()(int i, String& col){
-    TableEntry tmp_ref;
-    Pair<int> p = columns[col]; // should check that col exists
-    if(p.y == 0)
-      tmp_ref(Strings(i,p.x));
-    else
-      tmp_ref(Doubles(i,p.x));
-    return tmp_ref;
-  }
+public:
+  Table(int nr,Array<String>names,Array<int>types);
+  TableEntry operator()(int i, String& col);
+  TableRow operator[](int i){return TableRow(this,i);}
+  TableRow begin(void){return TableRow(this);}
+  TableRow end(void){return TableRow(this,_nrows);}
+  int nrows(void){return _nrows;}
+  
 };
 
+Table::Table(int nr,Array<String>names,Array<int>types){
+  _nrows = nr;
+  nstr = ndbl = 0;
+
+  for(int i = 0;i < names.len();i++){
+    if(types[i] == 0){
+      columns[names[i]] = Pair<int>(nstr++,types[i]);
+      //      cout << format("Table: column %d: %s(string)\n",i,names[i].c_str());
+    }
+    else{ 
+      columns[names[i]] = Pair<int>(ndbl++,types[i]);
+      //      cout << format("Table: column %d: %s(double)\n",i,names[i].c_str());
+    }
+  }
+  Doubles.reset(_nrows,ndbl);
+  Strings.reset(_nrows,nstr);
+}
+
+TableRow& TableRow::operator++(void) { // ++it 
+  if(++row > table->_nrows)row = table->_nrows;
+  return *this;
+}
+
+TableRow TableRow::operator++(int){ // it++
+  TableRow invalue(*this); // return initial state 
+  if(++row > table->_nrows)row = table->_nrows;
+  return invalue;
+}
+TableEntry TableRow::operator[](String& col){return (*table)(row,col);}
 
 
+TableEntry Table::operator()(int i, String& col){
+  TableEntry tmp_ref;
+  Pair<int> p = columns[col]; // should check that col exists
+  if(p.y == 0)
+    tmp_ref(Strings(i,p.x));
+  else
+    tmp_ref(Doubles(i,p.x));
+  return tmp_ref;
+}
 
 
 #endif

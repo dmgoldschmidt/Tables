@@ -41,26 +41,26 @@ Table csv_read(char* fname, int nrecs = 100){
   }
   reader.next(); // read header line
   int nfields = reader.nf;
-  cout << "header line: "<<reader.line<<" nfields = "<<nfields<<endl;
+  //  cout << "header line: "<<reader.line<<" nfields = "<<nfields<<endl;
   
   Array<String> names(nfields);
   Array<int> types(nfields);
 
   for(int i = 0;i < nfields;i++){
     names[i] = reader.field(i);
-    cout << format("names[%d]: %s\n",i,names[i].c_str());
+    //    cout << format("names[%d]: %s\n",i,names[i].c_str());
   }
   
   reader.next(); // read first data line and deduce types
   for(int i = 0;i < nfields;i++){
     types[i] = type(reader.field(i));
-    cout << format("types[%d]: %d\n",i,types[i]);
+    //    cout << format("types[%d]: %d\n",i,types[i]);
   }
   Table t(nrecs,names,types);
   for(int i = 0;i < nrecs;i++){
     for(int j = 0;j < nfields;j++){
 	t(i,names[j]) = reader.field(j);
-	cout << format("t(%d,%s) = %s\n ",i,names[j].c_str(),t(i,names[j]).c_str());
+	//	cout << format("t(%d,%s) = %s\n ",i,names[j].c_str(),t(i,names[j]).c_str());
     }
     reader.next();
   }
@@ -88,8 +88,8 @@ int main(int argc, char** argv){
   types[1] = 1; // Double
   Table t(3,names,types);
   //  cout << format("&names[0]: %x, &names[1]: %x\n",&names[0],&names[1]);
-  cout << "nrows: "<<t.nrows<<" ndbls: "<<t.ndbl << " nstr: "<< t.nstr<<endl;
-  cout << "Doubles:\n"<<t.Doubles<<"Strings:\n"<<t.Strings<<endl;
+  cout << "nrows: "<<t.nrows()<<endl;//" ndbls: "<<t.ndbl << " nstr: "<< t.nstr<<endl;
+  //  cout << "Doubles:\n"<<t.Doubles<<"Strings:\n"<<t.Strings<<endl;
   fflush(stdout);
   String name("name"), age("age");
   t(0,name) = "david";
@@ -111,18 +111,19 @@ int main(int argc, char** argv){
   //  KeyValue<int,int> kv_test(1,2);
   //  cout << "kv_test: "<<kv_test<<endl;
   int i = 0;
-  for(auto it = t.columns.begin(); it != t.columns.end(); it++){
-    cout << *it << endl;
-  }
-  cout <<"****** begin auto& : syntax\n\n";
-  for(auto& it : t.columns){
-    cout << it << endl;
-  }
+  // for(auto it = t.columns.begin(); it != t.columns.end(); it++){
+  //   cout << *it << endl;
+  // }
+  // cout <<"****** begin auto& : syntax\n\n";
+  // for(auto& it : t.columns){
+  //   cout << it << endl;
+  // }
 
 
   Table t1 = csv_read("../data",10);
   String left("left");
+  String right("right");
   for(int i = 0;i < 10;i++){
-    cout << "left: "<<t1(i,left)<<endl;
+    cout << "left: "<<t1(i,left)<<"  right: "<<t1(i,right)<<endl;
   }
 }
