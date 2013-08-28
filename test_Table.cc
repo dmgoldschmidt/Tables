@@ -27,46 +27,6 @@ using namespace std;
 //   return result;
 //   }
 
-int type(char* str){ // get type of string field
-   char* endptr;
-  strtod(str,&endptr);
-  return endptr != str;
-}
-
-Table csv_read(char* fname, int nrecs = 100){
-  Awk reader(',');
-  if(!reader.open(fname)){
-    cerr<< "Can't open "<<fname<<endl;
-    exit(1);
-  }
-  reader.next(); // read header line
-  int nfields = reader.nf;
-  //  cout << "header line: "<<reader.line<<" nfields = "<<nfields<<endl;
-  
-  Array<String> names(nfields);
-  Array<int> types(nfields);
-
-  for(int i = 0;i < nfields;i++){
-    names[i] = reader.field(i);
-    //    cout << format("names[%d]: %s\n",i,names[i].c_str());
-  }
-  
-  reader.next(); // read first data line and deduce types
-  for(int i = 0;i < nfields;i++){
-    types[i] = type(reader.field(i));
-    //    cout << format("types[%d]: %d\n",i,types[i]);
-  }
-  Table t(nrecs,names,types);
-  for(int i = 0;i < nrecs;i++){
-    for(int j = 0;j < nfields;j++){
-	t(i,names[j]) = reader.field(j);
-	//	cout << format("t(%d,%s) = %s\n ",i,names[j].c_str(),t(i,names[j]).c_str());
-    }
-    reader.next();
-  }
-  reader.close();
-  return t;
-}
 
 int main(int argc, char** argv){
   // Array<Col*> A(2);
@@ -110,7 +70,6 @@ int main(int argc, char** argv){
   cout << "our combined age is "<< t(0,age)+t(1,age)+t(2,age)<<endl;
   //  KeyValue<int,int> kv_test(1,2);
   //  cout << "kv_test: "<<kv_test<<endl;
-  int i = 0;
   // for(auto it = t.columns.begin(); it != t.columns.end(); it++){
   //   cout << *it << endl;
   // }
@@ -123,11 +82,16 @@ int main(int argc, char** argv){
   Table t1 = csv_read("../data",10);
   String left("left");
   String right("right");
-  for(int i = 0;i < 10;i++){
-    cout << "left: "<<t1(i,left)<<"  right: "<<t1(i,right)<<endl;
+  String row_no("row_no");
+  t1.add_col(row_no,1);
+  for(int i = 0;i < t1.nrows();i++){
+    t1(i,row_no) = i;
   }
-  cout << "Now with iterator:\n";
+  int nprint = 0;
   for(auto& row : t1){
-    cout << "left: "<<row[left]<<"  right: " <<row[right]<<endl;
+    
+    if(nprint++ < 10){
+      cout << "left: "<<row[left]<<"  right: " <<row[right]<<" row_no: "<<row[row_no]<<endl;
+    }
   }
 }

@@ -4,7 +4,7 @@
 #include "util.h"
 #include "Index.h"
 #include "Array.h"
-#include "Matrix.h"
+// #include "Matrix.h"
 //extern template class Matrix<String>;
 //extern template class Matrix<double>;
 using namespace std;
@@ -58,12 +58,7 @@ struct TableEntry {
   }
 };
 
-ostream& operator<<(ostream& os, const TableEntry& x){
-  if(x.d != nullptr) os << *x.d;
-  else if (x.s != nullptr) os << *x.s;
-  else throw "Object type error\n";
-  return os;
-}
+ostream& operator<<(ostream& os, const TableEntry& x);
 
 template<typename T>
 struct Pair{
@@ -103,6 +98,7 @@ public:
   TableEntry operator[](String& col);
 };
 
+Table csv_read(char* fname, int nrecs = 100);
 class Table {
   friend class TableRow;
   int _nrows; // no. of rows
@@ -111,73 +107,17 @@ class Table {
   Array<Array<double>> Doubles;
   Array<Array<String>> Strings;
   Index<String,Pair<int> > columns;
-
 public:
   Table(int nr,Array<String>names,Array<int>types);
   TableEntry operator()(int i, String& col);
   TableRow operator[](int i){return TableRow(this,i);}
   TableRow begin(void){return TableRow(this);}
   TableRow end(void){return TableRow(this,_nrows);}
-  Table add_col(String& name, int type);
+  void add_col(String& name, int type);
   int nrows(void){return _nrows;}
   
 };
 
-Table::Table(int nr,Array<String>names,Array<int>types){
-  _nrows = nr;
-  nstr = ndbl = 0;
-
-  for(int i = 0;i < names.len();i++){
-    if(types[i] == 0){
-      columns[names[i]] = Pair<int>(nstr++,types[i]);
-      //      cout << format("Table: column %d: %s(string)\n",i,names[i].c_str());
-    }
-    else{ 
-      columns[names[i]] = Pair<int>(ndbl++,types[i]);
-      //      cout << format("Table: column %d: %s(double)\n",i,names[i].c_str());
-    }
-  }
-  Doubles.reset(_nrows);
-  Strings.reset(_nrows);
-  for(int i = 0;i < _nrows;i++){
-    Doubles[i].reset(ndbl);
-    Strings[i].reset(nstr);
-  }
-}
-
-TableRow& TableRow::operator++(void) { // ++it 
-  if(++row > table->_nrows)row = table->_nrows;
-  return *this;
-}
-
-TableRow TableRow::operator++(int){ // it++
-  TableRow invalue(*this); // return initial state 
-  if(++row > table->_nrows)row = table->_nrows;
-  return invalue;
-}
-TableEntry TableRow::operator[](String& col){return (*table)(row,col);}
-
-
-TableEntry Table::operator()(int i, String& col){
-  TableEntry tmp_ref;
-  Pair<int> p = columns[col]; // should check that col exists
-  if(p.y == 0)
-    tmp_ref(Strings[i][p.x]);
-  else
-    tmp_ref(Doubles[i][p.x]);
-  return tmp_ref;
-}
-
-// Table Table::add_col(String& name, int type){
-//   Table new_table;
-//   new_table.columns = columns.copy();
-//   new_table._nrows = _nrows;
-
-//   if(type == 0){// add a String col
-    
-    
-
-  
 
 
 #endif
