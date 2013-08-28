@@ -126,4 +126,8 @@ int main(int argc, char** argv){
   for(int i = 0;i < 10;i++){
     cout << "left: "<<t1(i,left)<<"  right: "<<t1(i,right)<<endl;
   }
+  cout << "Now with iterator:\n";
+  for(auto& row : t1){
+    cout << "left: "<<row[left]<<"  right: " <<row[right]<<endl;
+  }
 }

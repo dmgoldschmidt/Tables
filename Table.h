@@ -108,8 +108,8 @@ class Table {
   int _nrows; // no. of rows
   int ndbl; // no. of double columns
   int nstr; // no. of String columns
-  Matrix<double> Doubles;
-  Matrix<String> Strings;
+  Array<Array<double>> Doubles;
+  Array<Array<String>> Strings;
   Index<String,Pair<int> > columns;
 
 public:
@@ -118,6 +118,7 @@ public:
   TableRow operator[](int i){return TableRow(this,i);}
   TableRow begin(void){return TableRow(this);}
   TableRow end(void){return TableRow(this,_nrows);}
+  Table add_col(String& name, int type);
   int nrows(void){return _nrows;}
   
 };
@@ -136,8 +137,12 @@ Table::Table(int nr,Array<String>names,Array<int>types){
       //      cout << format("Table: column %d: %s(double)\n",i,names[i].c_str());
     }
   }
-  Doubles.reset(_nrows,ndbl);
-  Strings.reset(_nrows,nstr);
+  Doubles.reset(_nrows);
+  Strings.reset(_nrows);
+  for(int i = 0;i < _nrows;i++){
+    Doubles[i].reset(ndbl);
+    Strings[i].reset(nstr);
+  }
 }
 
 TableRow& TableRow::operator++(void) { // ++it 
@@ -157,11 +162,22 @@ TableEntry Table::operator()(int i, String& col){
   TableEntry tmp_ref;
   Pair<int> p = columns[col]; // should check that col exists
   if(p.y == 0)
-    tmp_ref(Strings(i,p.x));
+    tmp_ref(Strings[i][p.x]);
   else
-    tmp_ref(Doubles(i,p.x));
+    tmp_ref(Doubles[i][p.x]);
   return tmp_ref;
 }
+
+// Table Table::add_col(String& name, int type){
+//   Table new_table;
+//   new_table.columns = columns.copy();
+//   new_table._nrows = _nrows;
+
+//   if(type == 0){// add a String col
+    
+    
+
+  
 
 
 #endif
