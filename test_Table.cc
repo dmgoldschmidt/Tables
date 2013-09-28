@@ -41,18 +41,19 @@ int main(int argc, char** argv){
   // cout << ss<< " "<< dd <<endl;
 
   Array<String> names(2); // column names
-  Array<int> types(2); // column types
+  //  Array<int> types(2); // column types
   names[0] = "name";
   names[1] = "age";
-  types[0] = 0; // String
-  types[1] = 1; // Double
-  Table t(3,names,types);
+  //  types[0] = 0; // String
+  //  types[1] = 1; // Double
+  Table t(names);
   //  cout << format("&names[0]: %x, &names[1]: %x\n",&names[0],&names[1]);
   cout << "nrows: "<<t.nrows()<<endl;//" ndbls: "<<t.ndbl << " nstr: "<< t.nstr<<endl;
   //  cout << "Doubles:\n"<<t.Doubles<<"Strings:\n"<<t.Strings<<endl;
   fflush(stdout);
   String name("name"), age("age");
   t(0,name) = "david";
+  cout << "checking t(0,name): "<< t(0,name)<<endl;
   t(0,age) = 71;
   t(1,name) = "cherie";
   t(1,age) = 55;
@@ -83,7 +84,7 @@ int main(int argc, char** argv){
   String left("left");
   String right("right");
   String row_no("row_no");
-  t1.add_col(row_no,1);
+  t1.add_col(row_no);
   for(int i = 0;i < t1.nrows();i++){
     t1(i,row_no) = i;
   }
@@ -93,5 +94,10 @@ int main(int argc, char** argv){
     if(nprint++ < 10){
       cout << "left: "<<row[left]<<"  right: " <<row[right]<<" row_no: "<<row[row_no]<<endl;
     }
+  }
+  Table flight_data = csv_read("test_flights.csv",10);
+  flight_data.columns_by_name().dump();
+  for(auto& row : flight_data){
+    cout << row << endl;
   }
 }

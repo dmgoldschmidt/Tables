@@ -78,33 +78,42 @@ public:
     return items[slot].value;
   }
 
-  IndexIterator<KEY,VALUE> end(void){
+  IndexIterator<KEY,VALUE> end(void) const {
     IndexIterator<KEY,VALUE> it(this);
     it.current_item = items.len();
     return it;
   }
 
-  IndexIterator<KEY,VALUE> begin(void){
+  IndexIterator<KEY,VALUE> begin(void) const {
     IndexIterator<KEY,VALUE> it(this);
 
     if(!items[0].occupied) it.step();
     return it;
   }
+  
+  void dump(void) const {
+    int n = items.len();
+    for(int i = 0;i < n;i++){
+      cout <<i<<": "<< items[i]<<endl;
+    }
+  }
 }; // end class Index
 
 
 
-template<typename KEY, typename VALUE>
+template<typename KEY, typename VALUE = unsigned int>
 class IndexIterator : public std::iterator<std::forward_iterator_tag, KeyValue<KEY,VALUE> > {
   friend class Index<KEY,VALUE>;
-  Index<KEY,VALUE>* index;
+  const Index<KEY,VALUE>* index;
   int current_item;
 
   void step(void){ // step to next occupied slot
     if(++current_item >= index->items.len()) return;
     while(current_item < index->items.len()){ 
-      //      cout << "stepping to "<<current_item<<endl;
-      if(index->items[current_item].occupied) return;
+      if(index->items[current_item].occupied){
+	//	cout << format("\nindex @%x: stepped to item %d\n",index,current_item);
+	return;
+      }
       current_item++;
     }
 
@@ -113,8 +122,9 @@ class IndexIterator : public std::iterator<std::forward_iterator_tag, KeyValue<K
 
 public:
   IndexIterator(void) : index(nullptr), current_item(0) {}
-  IndexIterator(Index<KEY,VALUE>* ind) : index(ind), current_item(0) {}
-
+  IndexIterator(const Index<KEY,VALUE>* ind) : index(ind), current_item(0) {}
+  IndexIterator(const IndexIterator& it) : index(it.index), current_item(it.current_item) {}
+    
   KeyValue<KEY,VALUE>* operator->(void) const{
     return &(index->items[current_item]);
   }

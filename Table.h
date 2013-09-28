@@ -4,85 +4,60 @@
 #include "util.h"
 #include "Index.h"
 #include "Array.h"
-// #include "Matrix.h"
-//extern template class Matrix<String>;
-//extern template class Matrix<double>;
+#include <limits>
+
 using namespace std;
-
-// struct Col {
-//   virtual int item(int i) = 0;
-// };
-// template <typename T>
-// struct Column : public Col {
-//   int nitems;
-//   Array<T> p;
-//   T& item(int i){return p[i];}
-//   Column(int n) {
-//     p.reset(nitems = n);
-//   }
-// };
-
-
+static String null("NULL");
+static double NaN = numeric_limits<double>::quiet_NaN();
+typedef enum{missing,dble,Str} TableEntryType;
 struct TableEntry {
-  double* d;
-  String* s;
-  
-  TableEntry(void) : d(nullptr), s(nullptr) {}
-  TableEntry(double& x) : d(&x), s(nullptr) {}
-  TableEntry(String& x) : d(nullptr), s(&x) {}
-  void operator()(double& x){d = &x; s = nullptr;}
-  void operator()(String& x){d = nullptr;s = &x;}
-  TableEntry& operator=(const String& ss){
-    *s = ss;
+  TableEntryType type;
+  double d;
+  String s;
+
+  TableEntry(void) : type(missing) {}
+  TableEntry(double& x) : type(dble), d(x) {} //set to double
+  TableEntry(String& x) : type(Str), s(x) {} //set to String
+  void operator()(double& x){d = x; type = dble;} //set existing to double
+  void operator()(String& x){type = Str; s = x;} //set existing to String
+  TableEntry& operator=(const String& ss){ //set existing to String
+    s = ss;
+    type = Str;
     return *this;
   }
-  TableEntry& operator=(const double dd){
-    *d = dd;
+  TableEntry& operator=(const double dd){ //set existing to double
+    d = dd;
+    type = dble;
     return *this;
   }
   
-  operator double&(void) {
-    if(d != nullptr) return *d;
-    throw "TableEntry object type error\n";
+  operator double&(void) { //output to double
+    if(type == dble) return d;
+    return NaN;
   }
 
-  operator String&(void) {
-    if(s != nullptr) return *s;
-    throw "TableEntry object type error\n";
+  operator String&(void) { //output to String
+    if(type == Str) return s;
+    return null;
   }
 
   const char* c_str(void){
-    if(s != nullptr)return s->c_str();
-    if(d != nullptr)return String(*d).c_str();
-    throw "TableEntry object type error\n";
+    if(type == Str)return s.c_str();
+    if(type = dble)return String(d).c_str();
+    return null.c_str();
   }
 };
 
 ostream& operator<<(ostream& os, const TableEntry& x);
 
-template<typename T>
-struct Pair{
-  T x;
-  T y;
-  Pair(void) {}
-  Pair(T xx, T yy) : x(xx), y(yy) {}
-};
-
-template<typename T>
-ostream& operator<<(ostream& os, const Pair<T>& p){
-  os << "("<<p.x<<","<<p.y<<")";
-  return os;
-}
-
 class Table;
 class TableView;
 
-
-class TableRow : public std::iterator<std::forward_iterator_tag, TableRow>{
+class TableRow : public std::iterator<std::forward_iterator_tag, TableRow>{ // Table iterator
+  friend ostream& operator<<(ostream& os, TableRow& r);
   Table* table;
   int row;
 public:
-  //  TableRow(void) : table(nullptr), row(0) {}
   TableRow(Table* t, int r = 0) : table(t), row(r)  {}
   TableRow* operator->(void){return this;}
   TableRow& operator*(void){return *this;}
@@ -95,27 +70,31 @@ public:
     return true;
   }
   bool operator!=(const TableRow& it){return !operator==(it);}
-  TableEntry operator[](String& col);
+  TableEntry operator[](String& col);//{return table->T[row][col];}
 };
 
-Table csv_read(char* fname, int nrecs = 100);
+ostream& operator<<(ostream& os, const TableRow& r);
+
+Table csv_read(char* fname, int maxrecs = -1, int blocksize = 100);
 class Table {
   friend class TableRow;
   int _nrows; // no. of rows
-  int ndbl; // no. of double columns
-  int nstr; // no. of String columns
-  Array<Array<double>> Doubles;
-  Array<Array<String>> Strings;
-  Index<String,Pair<int> > columns;
+  int _ncols; // no. of cols
+  Array<Array<TableEntry>> T;
+  Index<String> col;
+  Array<String>column_names;
 public:
-  Table(int nr,Array<String>names,Array<int>types);
-  TableEntry operator()(int i, String& col);
-  TableRow operator[](int i){return TableRow(this,i);}
+  Table(Array<String>names, int blocksize = 100);
+  TableEntry& operator()(int i, String& c) {return T[i][col[c]];} // should have bounds checking option
+  TableEntry& operator()(int i, int j){return T[i][j];}
   TableRow begin(void){return TableRow(this);}
   TableRow end(void){return TableRow(this,_nrows);}
-  void add_col(String& name, int type);
+  void add_col(String& name){col[name] = _ncols++;}
+  void nrows(int nr){_nrows = nr;}
   int nrows(void){return _nrows;}
-  
+  int ncols(void){return _ncols;}
+  const Index<String>& columns_by_name(void){return col;}
+  const Array<String>& columns_by_number(void){return column_names;}
 };
 
 
