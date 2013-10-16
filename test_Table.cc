@@ -96,8 +96,11 @@ int main(int argc, char** argv){
     }
   }
   Table flight_data = csv_read("test_flights.csv",10);
-  flight_data.columns_by_name().dump();
+  //  flight_data.columns_by_name().dump();
   for(auto& row : flight_data){
     cout << row << endl;
   }
+  TableView flight_data_sorted = flight_data.sort("arrival_airport_code");
+  for(int i = 0;i < flight_data.nrows();i++)
+    cout << flight_data_sorted[i];
 }
