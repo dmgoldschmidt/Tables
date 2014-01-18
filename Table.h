@@ -28,7 +28,7 @@ struct TableEntry {
   TableEntry& operator=(const double dd){ //set existing to double
     d = dd;
     _type = dble;
-    return *this;
+    return *this; // test comment
   }
   
   operator double&(void) { //output to double
@@ -40,12 +40,18 @@ struct TableEntry {
     if(_type == Str) return s;
     return null;
   }
-  bool operator<(const TableEntry& te);
+  bool operator<(const TableEntry& te) const;
+  bool operator==(const TableEntry& te) const;
 
-  const char* c_str(void){
+  const char* c_str(void) const {
     if(_type == Str)return s.c_str();
     if(_type == dble)return String(d).c_str();
     return null.c_str();
+  }
+  uint32_t hash(uintptr_t salt = 0) const{ // hash function
+    if(_type == Str)return s.hash(salt);
+    if(_type == dble)return (uint32_t)(d) + salt; // not a great hash function!
+    return 0;
   }
   TableEntryType type(void){return _type;}
 };
@@ -90,10 +96,12 @@ ostream& operator<<(ostream& os, const TableRow& r);
 
 Table csv_read(char* fname, int maxrecs = -1, int blocksize = 100);
 class TableView;
+class TableIndex;
 class Table {
   friend class TableIterator;
   friend class TableRow;
   friend class TableView;
+  friend class TableIndex;
   int _nrows; // no. of rows
   int _ncols; // no. of cols
   Array<TableRow> T;
@@ -113,24 +121,37 @@ public:
   const Index<String>& columns_by_name(void){return col;}
   const Array<String>& columns_by_number(void){return column_names;}
   TableView sort(const String& col_name);
+  TableIndex index(const String& col_name);
+  TableView search(
 };
 
 class TableView{
-  //  friend class Table;
   Table* table;
-
-  Array<uint> rows;
+  Array<uint> rows; // sorted list of row no.s
   int col_no;
   void reheap(int i, int n);
   
 public:
   TableView(Table* t) : table(t), rows(t->nrows()){
-    int nrows = t->nrows();
-    for(int i = 0;i < nrows;i++)rows[i] = i;
+    int n = t->nrows();
+    for(int i = 0;i < n;i++)rows[i] = i;
   }
+  TableView(Table* t, Callback* query);
   TableRow& operator[](int i){return (*table)[rows[i]];}
   void sort(const String& col_name);
+  int nrows(void){return rows.nrows();}
 };
+
+class TableIndex{
+  Table* table;
+  Index<TableEntry> idx;
+  int col_no;
+public:
+  TableIndex(Table* t, const String& col_name);
+  TableRow& operator[](const TableEntry& e){return table->T[idx[e]];}
+  bool has(const TableEntry& e){return idx.has(e);}
+};
+  
 
 
 

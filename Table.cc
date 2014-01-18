@@ -88,7 +88,7 @@ Table::Table(Array<String>names, int blocksize) : column_names(names) {
   }
 }
 
-bool TableEntry::operator<(const TableEntry& te){
+bool TableEntry::operator<(const TableEntry& te) const {
   if( (int)_type == (int)missing)return false;
   if( (int)te._type == (int)missing)return true;
   if((int)_type != (int)te._type) throw "TableEntry::operator<: incomparable entries\n";
@@ -97,6 +97,18 @@ bool TableEntry::operator<(const TableEntry& te){
     return s < te.s;
   case dble:
     return d < te.d;
+  }
+}
+
+bool TableEntry::operator==(const TableEntry& te) const {
+  if(_type != te._type) return false;
+  switch(_type){
+  case missing: return true;
+    break;
+  case Str:
+    return s == te.s;
+  case dble:
+    return d == te.d;
   }
 }
 
@@ -146,6 +158,11 @@ TableView Table::sort(const String& col_name){
   return tv;
 }
 
+TableIndex Table::index(const String& col_name){
+  TableIndex ti(this,col_name);
+  return ti;
+}
+
 inline TableEntry& TableRow::operator[](const String& s){
   return r[t->col[s]];
 }
@@ -180,3 +197,13 @@ void TableView::sort(const String& col_name){
     reheap(0,n);
   }
 }  
+
+TableIndex::TableIndex(Table* t, const String& col_name): table(t), idx(2*t->nrows()){
+  auto item = table->col.find(col_name);
+  if(item == nullptr) throw String("TableView::sort: no column ") + col_name;
+  col_no = item->value;
+  Table& tbl = *t;
+  for(int i = 0;i < t->nrows();i++) idx[tbl[i][col_no]] = i;
+}
+
+    

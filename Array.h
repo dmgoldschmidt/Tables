@@ -2,6 +2,7 @@
 #define ARRAY_H
 #include <iostream>
 #include <cassert>
+//#include <vector>
 #include "util.h"
 //#define DEBUG
 
@@ -22,6 +23,13 @@ struct Initializer { // subclass this for a callback initialization functor
 };
 
 template <typename ITEM>
+struct SimpleInit : public Initializer<ITEM> { //like this -- just set up a pointer to some constant
+  const ITEM* fill;
+  SimpleInit(const ITEM* p) : fill(p) {} // save the constant fill
+  void operator()(ITEM& item){item = *fill;}
+};
+
+template <typename ITEM>
 class ArrayBlock{ 
   friend class Array<ITEM>; // private helper class for Array
   size_t n; // block size
@@ -29,6 +37,7 @@ class ArrayBlock{
   ArrayBlock* next; // pointer to next block
   uint refcount; // only used in the first block
   Initializer<ITEM>* init; // user defined initialization functor
+  const ITEM* fill; // alternative initialization to constant
 
   // ArrayBlock(size_t nn, const ITEM* f) : n(nn), next(nullptr), refcount(0), fill(f) {
 
@@ -37,12 +46,20 @@ class ArrayBlock{
   //   if(fill != nullptr)
   //     for(uint i = 0;i < n;i++)data[i] = *fill;
   // }
-  ArrayBlock(size_t nn, Initializer<ITEM>* in) : n(nn), next(nullptr), refcount(0), init(in) {
+  ArrayBlock(size_t nn, Initializer<ITEM>* in) : n(nn), next(nullptr), refcount(0), init(in), fill(nullptr) {
 
     data = new ITEM[n];
     DBG(std::cout << format("new ArrayBlock at %x, data at %x\n",this,data);)
     if(init != nullptr)
       for(uint i = 0;i < n;i++)(*init)(data[i]); // call user-defined functor to initialize each ITEM 
+  }
+
+  ArrayBlock(size_t nn, const ITEM* item) : n(nn), next(nullptr), refcount(0), init(nullptr), fill(item) {
+
+    data = new ITEM[n];
+    DBG(std::cout << format("new ArrayBlock at %x, data at %x\n",this,data);)
+    if(fill != nullptr)
+      for(uint i = 0;i < n;i++)data[i] = *fill; // initialize with constant
   }
   ArrayBlock(const ArrayBlock&); // no copy
   ArrayBlock& operator=(const ArrayBlock&); //no assignment
@@ -66,7 +83,8 @@ class ArrayBlock{
 	//	exit(1);
 	//      fflush(stdout);
       if(next == nullptr){
-	next = new ArrayBlock(n,init);
+	if(init != nullptr) next = new ArrayBlock(n,init);
+	else next = new ArrayBlock(n,fill);
       }
       return next->operator[](i-n);
       
@@ -89,10 +107,22 @@ public:
   //   first->refcount = 1;
   //   DBG(std::cout << format("Array %x: first block at %x\n",this,first);)
   // }
-  Array(size_t n, Initializer<ITEM>* init = nullptr) : first(new ArrayBlock<ITEM>(n,init)){
+  Array(size_t n, Initializer<ITEM>* init) : first(new ArrayBlock<ITEM>(n,init)){
     first->refcount = 1;
     DBG(std::cout << format("Array %x: first block at %x\n",this,first);)
   }
+  Array(size_t n, const ITEM* fill = nullptr) : first(new ArrayBlock<ITEM>(n,fill)){
+    first->refcount = 1;
+    DBG(std::cout << format("Array %x: first block at %x\n",this,first);)
+  }
+  Array(initializer_list<ITEM> l){
+    int n = l.size();
+    first = new ArrayBlock<ITEM>(n,(ITEM*)NULL);
+    first->refcount = 1;
+    const ITEM* p = l.begin();
+    for(int i = 0;i < l.size();i++)(*first)[i] = p[i];
+  }
+
   Array(const Array& A): first(A.first) {
     if(first != nullptr) first->refcount++; // shallow copy
     DBG(if(first != nullptr) std::cout << format("Array %x (Block %x) copy constr: refcount = %d\n",this,first,first->refcount);) 
@@ -101,10 +131,17 @@ public:
     DBG(if(first != nullptr) std::cout<< format("~Array %x (Block %x): refcount = %d\n",this,first,first->refcount);) 
     if( first != nullptr && first->refcount-- <= 1)delete first;
   }
-  void reset(size_t n, Initializer<ITEM>* init = nullptr){
+  void reset(size_t n, Initializer<ITEM>* init){
     DBG(if(first != nullptr) std::cout << format("Array %x(Block %x) reset: refcount = %d\n",this,first,first->refcount);) 
     if(first != nullptr && first->refcount-- <= 1)delete first;
     first = new ArrayBlock<ITEM>(n,init);
+    first->refcount = 1;
+  }
+
+  void reset(size_t n, const ITEM* fill = nullptr){
+    DBG(if(first != nullptr) std::cout << format("Array %x(Block %x) reset: refcount = %d\n",this,first,first->refcount);) 
+    if(first != nullptr && first->refcount-- <= 1)delete first;
+    first = new ArrayBlock<ITEM>(n,fill);
     first->refcount = 1;
   }
 

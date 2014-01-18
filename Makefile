@@ -11,4 +11,11 @@ Table.o: Table.h Table.cc
 test_Table: test_Table.cc Table.h Index.h Array.h util.o Awk.o Table.o
 	 g++ $(CFLAGS) -o test_Table test_Table.cc util.o Awk.o Table.o
 test_Index: Index.cc Index.h Array.h util.h
-	    g++ $(CFLAGS) -o test_Index Index.cc util.o
+	g++ $(CFLAGS) -o test_Index Index.cc util.o
+matrix.o: matrix.cc Matrix.h
+	g++ $(CFLAGS) -c matrix.cc
+SparseMatrix.o: Matrix.h SparseMatrix.cc
+	g++ $(CFLAGS) -c SparseMatrix.cc
+testSparse: testSparse.cc SparseMatrix.o Matrix.h util.o matrix.o
+	g++ $(CFLAGS) -o testSparse testSparse.cc SparseMatrix.o util.o matrix.o
+
