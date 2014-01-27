@@ -3,7 +3,7 @@
 
 // matrix routines for SCALAR=double
 
-int ut0(matrix& A, double eps = 1.0e-10){// upper-triangularize in place by Givens row rotations
+int ut0(matrix& A, double eps){// upper-triangularize in place by Givens row rotations
   int nrot = 0;
   double cos_t, sin_t, h, a,b, tmp;
   for(int i = 1;i < A.nrows();i++){
@@ -33,7 +33,7 @@ int ut0(matrix& A, double eps = 1.0e-10){// upper-triangularize in place by Give
   return nrot;
 }
 
-int ut(matrix& A, double eps = 1.0e-10){// upper-triangularize in place by Givens row rotations
+int ut(matrix& A, double eps){// upper-triangularize in place by Givens row rotations
   int nrot = 0;
   Givens R;
 
@@ -63,7 +63,7 @@ matrix qr(const matrix& A){
 }
 
 
-void reduce(matrix& A, double eps = 1.0e-10){ // row-reduce upper-triangular A in place
+void reduce(matrix& A, double eps){ // row-reduce upper-triangular A in place
   int n = A.nrows();
   double a,b;
 
@@ -80,13 +80,13 @@ void reduce(matrix& A, double eps = 1.0e-10){ // row-reduce upper-triangular A i
   }
 }
 
-void solve(matrix& A, double eps = 1.0e-10){ // solve linear equations in-place 
+void solve(matrix& A, double eps){ // solve linear equations in-place 
   // A is an m x (m+k) matrix of m equations (in m unknows) with k right-hand sides
   ut(A); // rotate  to upper-triangular form;
   reduce(A,eps); // now row-reduce coefficients to identity.  Each rhs is now solved
 }
 
-matrix inv(const matrix& A, double eps = 1.0e-10){
+matrix inv(const matrix& A, double eps){
   matrix QR = qr(A); // rotate to upper-triangular form
   // and append the rotation matrix (as extra columns)
   int n = QR.nrows();
@@ -96,7 +96,7 @@ matrix inv(const matrix& A, double eps = 1.0e-10){
 }
 
 
-Array<matrix> svd(const matrix& A, double eps = 1.0e-10, int maxiters = 10){
+Array<matrix> svd(const matrix& A, double eps, int maxiters){
   Array<matrix> QR(2);
   Array<matrix> R(2);
   int j,niters,n = std::min(A.nrows(),A.ncols());
@@ -124,76 +124,67 @@ Array<matrix> svd(const matrix& A, double eps = 1.0e-10, int maxiters = 10){
   return QR;
 }
 
-struct Svd{
-  int ncols;
-  int nrows;
-  matrix AUV;
-  matrix AU;
-  matrix AV;
-  matrix U;
-  matrix V;
-  matrix A;
 
-  void reduce(const matrix& A0){
-    Givens R;
+void Svd::reduce(const matrix& A0){
+  Givens R;
 
-    nrows = A0.nrows();
-    ncols = A0.ncols();
-    AUV.reset(nrows+ncols,nrows+ncols,0);
-    // define the submatrices
-    AU = AUV.slice(0,0,nrows,ncols+nrows);
-    AV = AUV.slice(0,0,nrows+ncols,ncols);
-    U = AUV.slice(0,ncols,nrows,nrows);
-    V = AUV.slice(nrows,0,ncols,ncols);
-    A = AUV.slice(0,0,nrows,ncols);
+  nrows = A0.nrows();
+  ncols = A0.ncols();
+  AUV.reset(nrows+ncols,nrows+ncols,0);
+  // define the submatrices
+  AU = AUV.slice(0,0,nrows,ncols+nrows);
+  AV = AUV.slice(0,0,nrows+ncols,ncols);
+  U = AUV.slice(0,ncols,nrows,nrows);
+  V = AUV.slice(nrows,0,ncols,ncols);
+  A = AUV.slice(0,0,nrows,ncols);
 
-    A.copy(A0); // copy in the input
-    for(int i = 0;i < nrows;i++)U(i,i) = 1.0; // set rotation matrices = identity
-    for(int i = 0;i < ncols;i++)V(i,i) = 1.0;
-    ut(AU); // row rotate to upper triangular form 
-    for(int i = 0;i < nrows-1;i++){ // zero the ith row above the super-diagonal with column rotations
-      for(int j = ncols-1;j > i+1;j--){ // rotate columns j and j-1 to zero out AV(i,j)
-	if(!R.reset(AV(i,j-1),AV(i,j)))continue;
-	AV(i,j-1) = R.h; AV(i,j) = 0;
-	for(int k = i+1;k < nrows+ncols;k++)
-	  R.rotate(AV(k,j-1),AV(k,j));
-	if(!R.reset(AU(j-1,j-1),AU(j,j-1)))continue;
-	// remove resulting lower-triangular "residue" with a row rotation
-	AU(j-1,j-1) = R.h;
-	AU(j,j-1) = 0;
-	for(int k = j;k < nrows+ncols;k++)
-	  R.rotate(AU(j-1,k),AU(j,k));
-      }
-    }
-    // OK, A is now upper triangular with only the first super-diagonal non-zero
-    int  maxiters = 1000;
-    bool doit,not_done;
-    for(int niters = 0;niters < maxiters;niters++){
-      not_done = false;
-      for(int j = 0;j < ncols-1;j++){
-	if( (doit = R.reset(A(j,j),A(j,j+1))) ){
-	  for(int k = j+1;k < nrows+ncols;k++)
-	    R.rotate(A(k,j),A(k,j+1));
-	}
-	not_done |= doit;
-      }
-      if(!not_done)break;
-      not_done = false;
-      for(int i = 0;i < ncols-1;i++){
-	if( (doit = R.reset(A(i,i),A(i+1,i))) ){
-	  for(int k = i+1;k < nrows+ncols;k++)
-	    R.rotate(A(i,k),A(i+1,k));
-	}
-	not_done |= doit;
-      }
-      if(!not_done)break;
-      //      cout <<"iteration "<<niters<<"\n"<<A;
+  A.copy(A0); // copy in the input
+  for(int i = 0;i < nrows;i++)U(i,i) = 1.0; // set rotation matrices = identity
+  for(int i = 0;i < ncols;i++)V(i,i) = 1.0;
+  ut(AU); // row rotate to upper triangular form 
+  for(int i = 0;i < nrows-1;i++){ // zero the ith row above the super-diagonal with column rotations
+    for(int j = ncols-1;j > i+1;j--){ // rotate columns j and j-1 to zero out AV(i,j)
+      if(!R.reset(AV(i,j-1),AV(i,j)))continue;
+      AV(i,j-1) = R.h; AV(i,j) = 0;
+      for(int k = i+1;k < nrows+ncols;k++)
+	R.rotate(AV(k,j-1),AV(k,j));
+      if(!R.reset(AU(j-1,j-1),AU(j,j-1)))continue;
+      // remove resulting lower-triangular "residue" with a row rotation
+      AU(j-1,j-1) = R.h;
+      AU(j,j-1) = 0;
+      for(int k = j;k < nrows+ncols;k++)
+	R.rotate(AU(j-1,k),AU(j,k));
     }
   }
-};
+  // OK, A is now upper triangular with only the first super-diagonal non-zero
+  int  maxiters = 1000;
+  bool doit,not_done;
+  for(int niters = 0;niters < maxiters;niters++){
+    not_done = false;
+    for(int j = 0;j < ncols-1;j++){
+      if( (doit = R.reset(A(j,j),A(j,j+1))) ){
+	for(int k = j+1;k < nrows+ncols;k++)
+	  R.rotate(A(k,j),A(k,j+1));
+      }
+      not_done |= doit;
+    }
+    if(!not_done)break;
+    not_done = false;
+    for(int i = 0;i < ncols-1;i++){
+      if( (doit = R.reset(A(i,i),A(i+1,i))) ){
+	for(int k = i+1;k < nrows+ncols;k++)
+	  R.rotate(A(i,k),A(i+1,k));
+      }
+      not_done |= doit;
+    }
+    if(!not_done)break;
+    //      cout <<"iteration "<<niters<<"\n"<<A;
+  }
+}
+
     
 
-Array<matrix> svd1(const matrix& A, double eps = 1.0e-10, int maxiters = 10){
+Array<matrix> svd1(const matrix& A, double eps, int maxiters){
   Array<matrix> QR(2);
   Array<matrix> R(2);
   int j,niters,n = std::min(A.nrows(),A.ncols());
@@ -227,32 +218,53 @@ double dot_cols(const matrix& A, int i, int j){
   return ans;
 }
 
-int gram_schmidt(matrix& A, double eps){ // orthonormalize the columns of A
+double gram_schmidt(matrix& A, matrix& S, double eps){ // orthonormalize the columns of A
   int m = A.nrows();
   int n = A.ncols();
+  eps = eps*eps;
+  double error = 0;
 
   for(int i = 0;i < n;){
     // inductively, col.s 0,1,...,i-1 are already orthonormal
-    for(int j = 0;j < i;j++){
-      double scale = dot_cols(A,i,j);
-      for(int k = 0;k < m;k++)A(k,i) -= scale*A(k,j); // A_i -= <A_i,A_j>A_j
-      // OK, col. i is now orthogonal to cols 0,1,...,j
-    } 
-    double len = sqrt(dot_cols(A,i,i));
-    if(len < eps){// swap with last col and reduce n
-      double temp;
-      for(int k = 0;k < m;k++){
-	temp = A(k,i);
-	A(k,i) = A(k,n-1);
-	A(i,n-1) = temp;
+    S(0,i) = dot_cols(A,i,i); // save initial squared length
+    if(S(0,i) > eps){
+      for(int j = 0;j < i;j++){
+	double scale = dot_cols(A,i,j);
+	cout <<format("dot product of col %d = ",i);
+	for(int k = 0;k < m;k++)cout << A(k,i)<<" ";
+	cout <<format("\n\twith col %d = ",j);
+	for(int k = 0;k < m;k++)cout << A(k,j)<<" ";
+	cout <<"\nis "<<scale<<endl;
+	cout <<"length of col "<<i<<" is "<<sqrt(S(0,i))<<endl;
+      
+	for(int k = 0;k < m;k++)A(k,i) -= scale*A(k,j); // A_i -= <A_i,A_j>A_j
+	// OK, col. i is now orthogonal to cols 0,1,...,j
+	double e0 = fabs(scale)/sqrt(S(0,i)); // |cos(\theta_i)|
+	cout << format("e0(%d,%d) = %f\n",i,j,e0);
+	if(e0 > error)error = e0;
+	S(0,i) -= scale*scale; // adjust sq. length
+	//      cout << format("error %d %d = %f\n",i,j,error);
       }
+    }
+    if(S(0,i) < eps){// swap with last col and reduce n
+      if(i < n-1){
+	double temp;
+	for(int k = 0;k < m;k++){
+	  temp = A(k,i);
+	  A(k,i) = A(k,n-1);
+	  A(i,n-1) = temp;
+	}
+      }
+      S(0,n-1) = 0;
       n--;
       continue;
     }
-    for(int k = 0;k < m;k++) A(k,i) /= len; // normalize col i
+    S(0,i) = sqrt(S(0,i));
+    for(int k = 0;k < m;k++) A(k,i) /= S(0,i); // normalize col i
     i++;
   }
-  return n;
+  return error; // max value of |cos(\theta_i)|
 }
-    
+
+void print_mat(const matrix& A){ cout <<"\n"<<A;}
   
