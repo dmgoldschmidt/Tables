@@ -18,4 +18,5 @@ SparseMatrix.o: Matrix.h SparseMatrix.cc
 	g++ $(CFLAGS) -c SparseMatrix.cc
 testSparse: testSparse.cc SparseMatrix.o Matrix.h util.o matrix.o
 	g++ $(CFLAGS) -o testSparse testSparse.cc SparseMatrix.o util.o matrix.o
-
+recommend: recommend.cc Matrix.h SparseMatrix.o Awk.o matrix.o util.o
+	g++ $(CFLAGS) -o recommend recommend.cc Awk.o util.o matrix.o SparseMatrix.o

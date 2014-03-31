@@ -218,7 +218,7 @@ double dot_cols(const matrix& A, int i, int j){
   return ans;
 }
 
-double gram_schmidt(matrix& A, matrix& S, double eps){ // orthonormalize the columns of A
+double gram_schmidt(matrix& A, matrix& S, double eps){ // orthonormalize the columns of A 
   int m = A.nrows();
   int n = A.ncols();
   eps = eps*eps;
@@ -229,31 +229,32 @@ double gram_schmidt(matrix& A, matrix& S, double eps){ // orthonormalize the col
     S(0,i) = dot_cols(A,i,i); // save initial squared length
     if(S(0,i) > eps){
       for(int j = 0;j < i;j++){
-	double scale = dot_cols(A,i,j);
-	cout <<format("dot product of col %d = ",i);
-	for(int k = 0;k < m;k++)cout << A(k,i)<<" ";
-	cout <<format("\n\twith col %d = ",j);
-	for(int k = 0;k < m;k++)cout << A(k,j)<<" ";
-	cout <<"\nis "<<scale<<endl;
-	cout <<"length of col "<<i<<" is "<<sqrt(S(0,i))<<endl;
-      
-	for(int k = 0;k < m;k++)A(k,i) -= scale*A(k,j); // A_i -= <A_i,A_j>A_j
-	// OK, col. i is now orthogonal to cols 0,1,...,j
-	double e0 = fabs(scale)/sqrt(S(0,i)); // |cos(\theta_i)|
-	cout << format("e0(%d,%d) = %f\n",i,j,e0);
-	if(e0 > error)error = e0;
-	S(0,i) -= scale*scale; // adjust sq. length
-	//      cout << format("error %d %d = %f\n",i,j,error);
+        double scale = dot_cols(A,i,j);
+#ifdef VERBOSE
+        cout <<format("dot product of col %d = ",i);
+        for(int k = 0;k < m;k++)cout << A(k,i)<<" ";
+        cout <<format("\n\twith col %d = ",j);
+        for(int k = 0;k < m;k++)cout << A(k,j)<<" ";
+        cout <<"\nis "<<scale<<endl;
+        cout <<"length of col "<<i<<" is "<<sqrt(S(0,i))<<endl;
+#endif
+        for(int k = 0;k < m;k++)A(k,i) -= scale*A(k,j); // A_i -= <A_i,A_j>A_j
+        // OK, col. i is now orthogonal to cols 0,1,...,j
+        double e0 = fabs(scale)/sqrt(S(0,i)); // |cos(\theta_i)|
+        //        cout << format("e0(%d,%d) = %f\n",i,j,e0);
+        if(e0 > error)error = e0;
+        S(0,i) -= scale*scale; // adjust sq. length
+        //      cout << format("error %d %d = %f\n",i,j,error);
       }
     }
     if(S(0,i) < eps){// swap with last col and reduce n
       if(i < n-1){
-	double temp;
-	for(int k = 0;k < m;k++){
-	  temp = A(k,i);
-	  A(k,i) = A(k,n-1);
-	  A(i,n-1) = temp;
-	}
+        double temp;
+        for(int k = 0;k < m;k++){
+          temp = A(k,i);
+          A(k,i) = A(k,n-1);
+          A(i,n-1) = temp;
+        }
       }
       S(0,n-1) = 0;
       n--;

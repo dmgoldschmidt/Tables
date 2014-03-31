@@ -10,7 +10,7 @@ using namespace std;
 class Awk {
   ifstream file;
   char* record;
-  int len; // length of record
+  uint len; // length of record
   StringSplitter split;
   
 public:
