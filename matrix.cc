@@ -147,13 +147,13 @@ void Svd::reduce(const matrix& A0){
       if(!R.reset(AV(i,j-1),AV(i,j)))continue;
       AV(i,j-1) = R.h; AV(i,j) = 0;
       for(int k = i+1;k < nrows+ncols;k++)
-	R.rotate(AV(k,j-1),AV(k,j));
+        R.rotate(AV(k,j-1),AV(k,j));
       if(!R.reset(AU(j-1,j-1),AU(j,j-1)))continue;
       // remove resulting lower-triangular "residue" with a row rotation
       AU(j-1,j-1) = R.h;
       AU(j,j-1) = 0;
       for(int k = j;k < nrows+ncols;k++)
-	R.rotate(AU(j-1,k),AU(j,k));
+        R.rotate(AU(j-1,k),AU(j,k));
     }
   }
   // OK, A is now upper triangular with only the first super-diagonal non-zero
@@ -163,8 +163,8 @@ void Svd::reduce(const matrix& A0){
     not_done = false;
     for(int j = 0;j < ncols-1;j++){
       if( (doit = R.reset(A(j,j),A(j,j+1))) ){
-	for(int k = j+1;k < nrows+ncols;k++)
-	  R.rotate(A(k,j),A(k,j+1));
+        for(int k = j+1;k < nrows+ncols;k++)
+          R.rotate(A(k,j),A(k,j+1));
       }
       not_done |= doit;
     }
@@ -172,8 +172,8 @@ void Svd::reduce(const matrix& A0){
     not_done = false;
     for(int i = 0;i < ncols-1;i++){
       if( (doit = R.reset(A(i,i),A(i+1,i))) ){
-	for(int k = i+1;k < nrows+ncols;k++)
-	  R.rotate(A(i,k),A(i+1,k));
+        for(int k = i+1;k < nrows+ncols;k++)
+          R.rotate(A(i,k),A(i+1,k));
       }
       not_done |= doit;
     }
@@ -215,6 +215,11 @@ Array<matrix> svd1(const matrix& A, double eps, int maxiters){
 double dot_cols(const matrix& A, int i, int j){
   double ans = 0;
   for(int k = 0;k < A.nrows();k++) ans += A(k,i)*A(k,j);
+  return ans;
+}
+double dotAB(const matrix& A, const matrix& B, int i, int j){
+  double ans = 0;
+  for(int k = 0;k < A.nrows();k++) ans += A(k,i)*B(k,j);
   return ans;
 }
 

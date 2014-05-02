@@ -21,6 +21,7 @@ class SparseMatrix {
 public:
   SparseMatrix(int m, int n, const matrix& A0);
   matrix operator*(const matrix& M); // premultiply dense matrix M by sparse matrix *this
+  matrix svd1(int& r, int niters2 = 100, double eps = 1.0e-8, unsigned seed = 1);
   matrix svd(int r, int niters = 100, double eps = 1.0e-8, unsigned seed = 1);
   int row(int m) const;
   int col(int m) const;
@@ -33,7 +34,8 @@ public:
   void set_transpose_flag(bool b){transposed = (int)b;}
 };
 
-struct Givens{
+struct Givens{ // reset computes, applies, and stores the 2x2 rotation matrix T s.t. T(a,b) = (sqrt(a^2+b^2),0) 
+  // rotate applies the above rotation to an arbitrary vector (x,y).
   double sin_t;
   double cos_t;
   double h;
@@ -220,6 +222,7 @@ std::ostream& operator <<(std::ostream& os, const Matrix<SCALAR>& M){
 // declarations for matrix (=Matrix<double>)
 
 double dot_cols(const matrix& A, int i, int j);
+double dotAB(const matrix& A, const matrix& B, int i, int j);
 double gram_schmidt(matrix& A, matrix& S, double eps = 1.0e-8);
 int ut0(matrix& A, double eps = 1.0e-10); // upper-triangularize in place by Givens row rotations
 int ut(matrix& A, double eps = 1.0e-10); // upper-triangularize in place by Givens row rotations

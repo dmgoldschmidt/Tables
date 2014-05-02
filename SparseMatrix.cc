@@ -7,7 +7,7 @@ SparseMatrix::SparseMatrix(int m, int n, const matrix& A0) : _nrows(m), _ncols(n
 matrix SparseMatrix::operator*(const matrix& M){ // premultiply M by sparse matrix
   int m = transposed? _ncols:_nrows;
   int n = transposed? _nrows:_ncols;
-  if(n != M.nrows())throw "SparseMatrix premultiply: dimension error\n";
+  if(n != M.nrows())throw format("SparseMatrix premultiply: dimension error (n = %d, M.nrows = %d)\n",n,M.nrows());
   double zero = 0; // hokey! need another Matrix constructor
   matrix M1(m,M.ncols(),&zero);
   //cout << format("premultiply sparse (%dx%d)*(%dx%d)\n",m,n,M.nrows(),M.ncols());  
@@ -42,12 +42,12 @@ matrix SparseMatrix::svd(int r, int niters, double eps, unsigned seed){
 
   while(iter < niters && error > eps){
     //cout << format("this is %d x %d, U is %d x %d\n",_nrows,_ncols,U.nrows(),U.ncols());
-    V.copy((*this)*U);
+    V.copy((*this)*U); // V <- (*this)*U)
     //    cout << "\nfirst print:\nS:\n"<<S<<"\nU:\n"<<U<<"\nV:\n"<<V;
     error = gram_schmidt(V,S);
     //   cout << "\nsecond print.  Error = "<<error<<"\nS:\n"<<S<<"\nU:\n"<<U<<"\nV:\n"<<V;
     transpose();
-    U.copy((*this)*V);
+    U.copy((*this)*V);// U <- (*this)^T*V
     //   cout << "\nthird print:\nS:\n"<<S<<"\nU:\n"<<U<<"\nV:\n"<<V;
     transpose();
     double error1 = gram_schmidt(U,S);
@@ -56,6 +56,62 @@ matrix SparseMatrix::svd(int r, int niters, double eps, unsigned seed){
     cout << "iteration "<<iter<<" error: "<<error<<"\n******\n";
     iter++;
   }
+  return A;
+}
+matrix SparseMatrix::svd1(int& r, int niters, double eps, unsigned seed){ // note: r may be reset to effective rank
+   
+  matrix A(_nrows+_ncols+1,r); // holds singular values in row_0, right singular vectors in col.s 0 -> r-1,  
+  // rows 1 -> ncols,  left singular vectors in col.s 0 -> r-1,  rows ncols+1 -> ncols+nrows
+  matrix S = A.slice(0,0,1,r); // singular values
+  matrix U = A.slice(1,0,_ncols,r); // right singular vectors
+  matrix V = A.slice(1+_ncols,0,_nrows,r); // left singular vectors [ V^t(*this)U = diag(S)]
+
+  srandom(seed);
+  double rand_max = (double)RAND_MAX;
+  for(int i = 1;i < _ncols;i++){ // initialize right sing. vectors to random values uniform on (-1,1)
+    for(int j = 0;j < r;j++)A(i,j) = 2*random()/rand_max - 1;
+  }
+  
+  for(int i = 0;i < r;i++){ // get the ith singular vector
+    cout << "Computing singular vector "<<i<<endl;
+    matrix U_i = A.slice(1,i,_ncols,1); // ith col of U
+    matrix V_i = A.slice(1+_ncols,i,_nrows,1); // ith col of V
+    cout << "dim(U_i) =  "<< U_i.nrows()<<", dim(V_i) = "<<V_i.nrows()<<endl;
+    cout << "nrows = "<<nrows()<<", ncols = "<<ncols()<<endl;
+  
+    matrix U_last(_ncols,1); // previous values
+    matrix delta(_ncols,1);
+
+    for(int j = 0;j < U_i.nrows();j++) U_i(j,0) = 2*random()/rand_max - 1; // initialize U_i to random
+    double err = eps;
+    bool done = false;
+    for(int iter = 0;!done && iter < niters && err >= eps;iter++) {
+      for(int j = 0;j < i;j++){ //orthogonalize against previous U's
+        double scale = dot_cols(U,i,j);
+        for(int k = 0;k < U_i.nrows();k++) U_i(k,0) -= scale*U(k,j); //make U_i orthogonal to U_j
+      }
+      double length = sqrt(dot_cols(U_i,0,0));
+      for(int k = 0;k < U_i.nrows();k++) U_i(k,0) /= length; // normalize
+      U_last.copy(U_i); // save previous value
+      V_i.copy((*this)*U_i); // V_i <- (*this)*U_i
+      length = sqrt(dot_cols(V_i,0,0));
+      for(int k = 0;k < V_i.nrows();k++) V_i(k,0) /= length; // normalize
+      transpose();
+      U_i.copy((*this)*V_i); // U_i <- (*this)^t*V_i
+      S(0,i) = sqrt(dot_cols(U_i,0,0));
+      for(int k = 0;k < U_i.nrows();k++) U_i(k,0) /= S(0,i); // normalize
+      cout << "iteration "<<iter<<", U_i:\n"<<U_i<<"U_last:\n"<<U_last<<"V_i:\n"<<V_i<<"S:\n"<<S;
+      if(S(0,i) < eps){ // null sing. vector
+        done = true;
+        r = i; // we only got i sing. vectors
+        continue; 
+      }
+      transpose();
+      delta = U_i - U_last;
+      err = sqrt(dot_cols(delta,0,0)/delta.nrows());
+      cout <<"error = "<<err<<endl;
+    }
+  }      
   return A;
 }
 
