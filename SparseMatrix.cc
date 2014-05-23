@@ -1,8 +1,56 @@
 #include "Matrix.h"
 #include <cstdlib>
-SparseMatrix::SparseMatrix(int m, int n, const matrix& A0) : _nrows(m), _ncols(n), _nentries(A0.nrows()), A(A0), transposed(0) {
-    if(A.ncols() != 3) throw "SparseMatrix: input must have three columns\n";
+SparseMatrix::SparseMatrix(int m, int n, const matrix& A) : _nrows(m), _ncols(n), _nentries(A.nrows()), Entries(A), transposed(0) {
+    if(Entries.ncols() != 3) throw "SparseMatrix: input must have three columns\n";
   }
+
+void SparseMatrix::swap_rows(int i1, int i2){
+  double temp;
+  for(int j = 0;j < 3;j++){
+    temp = Entries(i1,j);
+    Entries(i1,j) = Entries(i2,j);
+    Entries(i2,j) = temp;
+  }
+}
+      
+
+void SparseMatrix::reheap(int i, int n) {// the children of this sub-heap are heaps.  Make it a heap recursively
+  int i1 = 2*i+1;
+  if(i1 >=n) return; 
+  int i2 = i1+1;
+  
+  if(i2 >= n || Entries(i2,0) <  Entries(i1,0)) i2 = i1; // choose larger child
+  if(Entries(i,0) < Entries(i2,0)){ // we need parent >= larger child
+    swap_rows(i,i2);
+    reheap(i2,n); // recursively fix up child heap
+  }
+}
+
+Array<int> SparseMatrix::sort(void){ // sort entries by row. Set transpose flag to do col.s
+  int n = nentries();
+  for(int i = n/2;i >= 0;i--)reheap(i,n); // make initial heap
+  while(n > 1){ // swap first and last row index and reheap
+    swap_rows(0,--n);
+    reheap(0,n);
+  }
+  cout <<"Entries:\n"<<Entries;
+  Array<int> starts(nrows()); // col. vector of starting row indices
+  int k = 0;
+  double last = -1;
+  for(int i = 0;i < nentries();i++){
+    if(Entries(i,0) != last){
+      last = Entries(i,0);
+      starts[k++] = i;
+    }
+  }
+  assert(k == nrows());
+  return starts;
+}  
+
+
+
+
+
 
 matrix SparseMatrix::operator*(const matrix& M){ // premultiply M by sparse matrix
   int m = transposed? _ncols:_nrows;
@@ -13,11 +61,10 @@ matrix SparseMatrix::operator*(const matrix& M){ // premultiply M by sparse matr
   //cout << format("premultiply sparse (%dx%d)*(%dx%d)\n",m,n,M.nrows(),M.ncols());  
   for(int k = 0;k < _nentries;k++){
     //    cout << format("entry %d: i = %d, j = %d, %f\n",k,(int)A(k,transposed),(int)A(k,transposed^1),A(k,2));
-    int i = (int)A(k,transposed);
-    int j = (int)A(k,transposed^1);
+    int i = (int)Entries(k,transposed);
+    int j = (int)Entries(k,transposed^1);
     for(int l = 0;l < M.ncols();l++){
-      M1(i,l) += A(k,2)*M(j,l);
-      //      cout << format("ans(%d,%d) += A(%d,%d)*M(%d,%d) = %f*%f\n",i,l,i,j,j,l,A(k,2),M(j,l));
+      M1(i,l) += Entries(k,2)*M(j,l);
     }
   }
   return M1;
@@ -100,7 +147,7 @@ matrix SparseMatrix::svd1(int& r, int niters, double eps, unsigned seed){ // not
       U_i.copy((*this)*V_i); // U_i <- (*this)^t*V_i
       S(0,i) = sqrt(dot_cols(U_i,0,0));
       for(int k = 0;k < U_i.nrows();k++) U_i(k,0) /= S(0,i); // normalize
-      cout << "iteration "<<iter<<", U_i:\n"<<U_i<<"U_last:\n"<<U_last<<"V_i:\n"<<V_i<<"S:\n"<<S;
+      //      cout << "iteration "<<iter<<", U_i:\n"<<U_i<<"U_last:\n"<<U_last<<"V_i:\n"<<V_i<<"S:\n"<<S;
       if(S(0,i) < eps){ // null sing. vector
         done = true;
         r = i; // we only got i sing. vectors
@@ -109,15 +156,18 @@ matrix SparseMatrix::svd1(int& r, int niters, double eps, unsigned seed){ // not
       transpose();
       delta = U_i - U_last;
       err = sqrt(dot_cols(delta,0,0)/delta.nrows());
-      cout <<"error = "<<err<<endl;
+      if(iter%10 == 0){
+        cout << "Singular values:\n"<< S;
+        cout <<"end iteration "<<iter<<", error = "<<err<<endl;
+      }
     }
   }      
   return A;
 }
 
-int SparseMatrix::row(int m) const {return A(m,transposed);}
-int SparseMatrix::col(int m) const {return A(m,transposed^1);}
-double SparseMatrix::entry(int m) const{return A(m,2);}
+int SparseMatrix::row(int m) const {return Entries(m,transposed);}
+int SparseMatrix::col(int m) const {return Entries(m,transposed^1);}
+double SparseMatrix::entry(int m) const{return Entries(m,2);}
    
 int SparseMatrix::nrows(void) const {return transposed? _ncols:_nrows;}
 int SparseMatrix::ncols(void) const {return transposed? _nrows:_ncols;}
