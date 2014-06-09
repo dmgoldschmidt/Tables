@@ -3,6 +3,7 @@
 #include<iostream>
 #include<vector>
 #include<string>
+#include<cstring>
 
 using namespace std;
 /* Command line parser

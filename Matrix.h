@@ -11,6 +11,7 @@
 template<typename SCALAR>
 class Matrix;
 typedef Matrix<double> matrix;
+typedef Matrix<int> imatrix;
 
 class SparseMatrix {
   const matrix& Entries; // A(m,0) = row index i, A(m,1) = col index j, A(m,2) = (i,j)-entry 
@@ -140,6 +141,7 @@ public:
   //*********
 
   Matrix operator+(const Matrix& A) const {
+    if(_nrows != A.nrows() || _ncols != A.ncols()) throw "Matrix operator+ dimension error\n";
     Matrix B(_nrows,_ncols);
     for(int i = 0;i < _nrows;i++){
       for(int j = 0;j < _ncols;j++)B(i,j) = ENTRY(i,j)+A(i,j);
@@ -147,6 +149,7 @@ public:
     return B;
   }
   Matrix operator-(const Matrix& A) const {
+    if(_nrows != A.nrows() || _ncols != A.ncols()) throw "Matrix operator- dimension error\n";
     Matrix B(_nrows,_ncols);
     for(int i = 0;i < _nrows;i++){
       for(int j = 0;j < _ncols;j++)B(i,j) = ENTRY(i,j)-A(i,j);
@@ -154,6 +157,7 @@ public:
     return B;
   }
   Matrix operator*(const Matrix& A)const {
+    if(_nrows != A.nrows() || _ncols != A.ncols()) throw "Matrix operator* dimension error\n";
     Matrix B(_nrows,A._ncols);
 
     for(int i = 0;i < _nrows;i++){
@@ -167,6 +171,26 @@ public:
     }
     return B;
   }
+  void operator +=(const Matrix& A){
+    if(_nrows != A.nrows() || _ncols != A.ncols()) throw "Matrix operator+= dimension error\n";
+    for(int i = 0;i < _nrows;i++){
+      for(int j = 0;j < _ncols;j++) ENTRY(i,j) += A(i,j);
+    }
+  }
+
+  void operator -=(const Matrix& A){
+    if(_nrows != A.nrows() || _ncols != A.ncols()) throw "Matrix operator-= dimension error\n";
+    for(int i = 0;i < _nrows;i++){
+      for(int j = 0;j < _ncols;j++) ENTRY(i,j) -= A(i,j);
+    }
+  }
+
+  void zero(void){
+    for(int i = 0;i < _nrows;i++){
+      for(int j = 0;j < _ncols;j++) ENTRY(i,j) = 0;
+    }
+  }
+
   Matrix operator*(const SparseMatrix& A){ // post-multiply by sparse matrix A // NOTE: only for SCALAR = double
     double zero = 0;
     if(_ncols != A.nrows()) throw "Sparse post-multiply dimension error\n";
@@ -248,9 +272,5 @@ struct Svd{
   void reduce(const matrix& A0);
 };
 Array<matrix> svd1(const matrix& A, double eps = 1.0e-10, int maxiters = 10);
-
-
-
- 
 
 #endif

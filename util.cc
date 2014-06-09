@@ -19,9 +19,9 @@ void deblank(char* p){ // eliminate ' ' and '\t' from string
 int StringSplitter::operator()(char* record){
   nf = 1;
   field.clear();
-  field.push_back(record);
+  field.push_back(record); // set the first pointer
   while(*record){
-    if(*record == fs){ // terminate string and store next start position
+    if( (fs == ' ' && *record == '\t') || *record == fs){ // terminate string and store next start position
       *record = '\0';
       while(isblank(*++record)); // skip leading blanks
       field.push_back(record);

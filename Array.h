@@ -19,7 +19,7 @@ class Array;
 
 template <typename ITEM>
 struct Initializer { // subclass this for a callback initialization functor
-  virtual void operator()(ITEM& item) = 0;
+  virtual void operator()(ITEM& item) = 0; // if specified, it is called once for each allocated ITEM
 };
 
 template <typename ITEM>
@@ -83,8 +83,8 @@ class ArrayBlock{
 	//	exit(1);
 	//      fflush(stdout);
       if(next == nullptr){
-	if(init != nullptr) next = new ArrayBlock(n,init);
-	else next = new ArrayBlock(n,fill);
+        if(init != nullptr) next = new ArrayBlock(n,init);
+        else next = new ArrayBlock(n,fill);
       }
       return next->operator[](i-n);
       

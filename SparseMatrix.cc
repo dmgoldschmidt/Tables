@@ -1,5 +1,8 @@
 #include "Matrix.h"
 #include <cstdlib>
+
+// NOTE:  SparseMatrix needs to be converted to a template, to properly handle both int and double matrices
+
 SparseMatrix::SparseMatrix(int m, int n, const matrix& A) : _nrows(m), _ncols(n), _nentries(A.nrows()), Entries(A), transposed(0) {
     if(Entries.ncols() != 3) throw "SparseMatrix: input must have three columns\n";
   }
@@ -19,8 +22,8 @@ void SparseMatrix::reheap(int i, int n) {// the children of this sub-heap are he
   if(i1 >=n) return; 
   int i2 = i1+1;
   
-  if(i2 >= n || Entries(i2,0) <  Entries(i1,0)) i2 = i1; // choose larger child
-  if(Entries(i,0) < Entries(i2,0)){ // we need parent >= larger child
+  if(i2 >= n || Entries(i2,transposed) <  Entries(i1,transposed)) i2 = i1; // choose larger child
+  if(Entries(i,transposed) < Entries(i2,transposed)){ // we need parent >= larger child
     swap_rows(i,i2);
     reheap(i2,n); // recursively fix up child heap
   }
@@ -33,17 +36,17 @@ Array<int> SparseMatrix::sort(void){ // sort entries by row. Set transpose flag 
     swap_rows(0,--n);
     reheap(0,n);
   }
-  cout <<"Entries:\n"<<Entries;
-  Array<int> starts(nrows()); // col. vector of starting row indices
-  int k = 0;
-  double last = -1;
+  //  cout <<"Entries:\n"<<Entries;
+  int last = -1;
+  Array<int> starts(nrows(),&last); // col. vector of starting row indices initialize to -1 i.e. row absent
+  int row = 0;
   for(int i = 0;i < nentries();i++){
-    if(Entries(i,0) != last){
-      last = Entries(i,0);
-      starts[k++] = i;
+    if((int)Entries(i,transposed) != last){
+      last = (int)Entries(i,transposed);
+      while(row != last)row++;
+      starts[row] = i;
     }
   }
-  assert(k == nrows());
   return starts;
 }  
 
@@ -65,6 +68,24 @@ matrix SparseMatrix::operator*(const matrix& M){ // premultiply M by sparse matr
     int j = (int)Entries(k,transposed^1);
     for(int l = 0;l < M.ncols();l++){
       M1(i,l) += Entries(k,2)*M(j,l);
+    }
+  }
+  return M1;
+}
+
+matrix SparseMatrix::abs_mult(const matrix& M){ // premultiply M by sparse matrix, ignore all signs
+  int m = transposed? _ncols:_nrows;
+  int n = transposed? _nrows:_ncols;
+  if(n != M.nrows())throw format("SparseMatrix abs_multiply: dimension error (n = %d, M.nrows = %d)\n",n,M.nrows());
+  double zero = 0; // hokey! need another Matrix constructor
+  matrix M1(m,M.ncols(),&zero);
+  //cout << format("premultiply sparse (%dx%d)*(%dx%d)\n",m,n,M.nrows(),M.ncols());  
+  for(int k = 0;k < _nentries;k++){
+    //    cout << format("entry %d: i = %d, j = %d, %f\n",k,(int)A(k,transposed),(int)A(k,transposed^1),A(k,2));
+    int i = (int)Entries(k,transposed);
+    int j = (int)Entries(k,transposed^1);
+    for(int l = 0;l < M.ncols();l++){
+      M1(i,l) += fabs(Entries(k,2))*fabs(M(j,l));
     }
   }
   return M1;

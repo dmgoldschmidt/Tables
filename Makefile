@@ -4,6 +4,8 @@ my_test: my_test.cc Index.h Array.h
 	 g++ $(CFLAGS) -o my_test my_test.cc
 util.o: util.h util.cc
 	g++ $(CFLAGS) -c -o util.o util.cc 
+GetOpt.o: GetOpt.h GetOpt.cc
+	g++ $(CFLAGS) -c -o GetOpt.o GetOpt.cc
 Awk.o:	Awk.h Awk.cc util.o 
 	g++ $(CFLAGS) -c -o Awk.o Awk.cc
 Table.o: Table.h Table.cc
@@ -18,5 +20,5 @@ SparseMatrix.o: Matrix.h SparseMatrix.cc
 	g++ $(CFLAGS) -c SparseMatrix.cc
 testSparse: testSparse.cc SparseMatrix.o Matrix.h util.o matrix.o
 	g++ $(CFLAGS) -o testSparse testSparse.cc SparseMatrix.o util.o matrix.o
-recommend: recommend.cc Matrix.h SparseMatrix.o Awk.o matrix.o util.o
-	g++ $(CFLAGS) -o recommend recommend.cc Awk.o util.o matrix.o SparseMatrix.o
+recommend: recommend.cc Matrix.h SparseMatrix.o Awk.o  matrix.o Matrix.h util.o GetOpt.o 
+	g++ $(CFLAGS) -o recommend recommend.cc Awk.o util.o matrix.o SparseMatrix.o GetOpt.o

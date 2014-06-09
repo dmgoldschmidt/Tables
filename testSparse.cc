@@ -32,11 +32,18 @@ int main(int argc, char** argv){
     cout << "dense SVD:\n"<<R.AUV;
     SparseMatrix S(m,n,B);
     Array<int> starts = S.sort();
-    cout <<"Sorted B:\n"<<B;
+    cout <<"Row sorted:\n"<<B;
     for(int i = 0;i < m;i++){
       cout << format("row %d: %d\n",i,starts[i]);
     }
+    S.transpose();
+    starts = S.sort();
+    cout << "Col sorted:\n"<<B;
+    for(int i = 0;i < n;i++){
+      cout << format("row %d: %d\n",i,starts[i]);
+    }
     exit(0);
+
     S.transpose();
     cout << "A = "<<A;
     cout << "A^t*A = "<<A.T()*A;

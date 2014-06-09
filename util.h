@@ -13,10 +13,11 @@ using namespace std;
 
 class StringSplitter { // Functor to split a C-string into fields using field separator fs.  NOTE: leading
   // blanks in a field are skipped, so the field separator  is really fs followed by any number of blanks.
+  // If fs == ' ', the splitter will also recognize '\t'.  If fs == '\t', ONLY '\t' is recognized.
 
   char fs; // field separator
   int nf; // no. of fields split out
-  vector<char*> field; // array of fields
+  vector<char*> field; // array of ptrs to fields
 public:
  StringSplitter(char fs0 = ' '): fs(fs0), nf(0), field(10) {} // allocate 10 fields just to get started
   int operator()(char* record); // input a record, return nf (Note: fs is over-written with '\0', making
