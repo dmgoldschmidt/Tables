@@ -191,6 +191,8 @@ public:
     }
   }
 
+
+
   Matrix operator*(const SparseMatrix& A){ // post-multiply by sparse matrix A // NOTE: only for SCALAR = double
     double zero = 0;
     if(_ncols != A.nrows()) throw "Sparse post-multiply dimension error\n";

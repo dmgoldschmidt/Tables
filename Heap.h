@@ -35,7 +35,7 @@ protected:
   void push(int i){ // all edges of the tree satisfy >= except between i and its parent.  Fix that edge recursively
     if(i == 0)return;
     int j = (i-1)/2; // parent of i
-    if(item[j] <  item[i]){ // make parent >= child
+    if(item[i] <  item[j]){ // make parent >= child
       T t = item[i];
       item[i] = item[j];
       item[j] = t;
@@ -80,9 +80,9 @@ public:
     int i2 = i1+1;
     T t;
 
-    if(i2 >= _nitems || item[i2] <  item[i1]) i2 = i1; // choose largeer child
-    if(item[i] < item[i2]){ // we need parent >= larger child
-      t = item[i];item[i] = item[i2];item[i2] = t; // swap parent with larger child
+    if(i2 >= _nitems || item[i1] <  item[i2]) i2 = i1; // choose smaller child
+    if(item[i2] < item[i]){ // we need parent <= smaller child
+      t = item[i];item[i] = item[i2];item[i2] = t; // swap parent with smaller child
       reheap(i2); // recursively fix up child heap
     }
   }
@@ -106,7 +106,7 @@ public:
       push(_nitems++); // move it up
     }
     else{// when the heap is full and the new item is in the bottom n, replace item[0] with the new item
-      if(item[0] < new_item) return false;
+      if(new_item < item[0]) return false;
       //      _weight += new_item.weight-item(0)._weight;
       item[0] = new_item; // old top is clobbered here
       reheap(0);
@@ -147,6 +147,20 @@ public:
   }
 };
 
+template<typename T>
+struct IndexPair {
+  int i;
+  T item;
+  IndexPair(void) {}
+  IndexPair(int ii, const T& x): i(ii),item(x) {}
+  bool operator <(const IndexPair& p)const {return item < p.item;}
+};
+
+template <typename T>
+ostream& operator<<(ostream& os, const IndexPair<T>& p){
+  os << p.i <<": "<< p.item << endl;
+  return os;
+}
 
 
 
