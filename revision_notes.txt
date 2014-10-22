@@ -1,0 +1,13 @@
+1. Array needs a max_length option:  throw exception if max_length is exceeded. Then the len() method should be modified to return the largest index yet seen.
+  
+2. Once 1) is in, Heap can be modified to use Array
+with the new option.
+
+3. SparseMatrix needs to be a template so we can have 
+SparseMatrix<int>.  So the input to SparseMatrix<T> is an Array<Entry> where Entry has two members: 1) an array of two ints for row & col indices, 2) a type T item for the corresponding Matrix entry.
+
+4. We need to be able to read an arbitrary text file into an Array<myclass>, where the variable length feature of Array allows any number of lines to be read, and they need to be parsed into the data members of myclass in a generic way.  How to do this? 
+a) the user provides a format specification for the line conversions, or
+b) In the absence of a format spec., the reader parses the line as an Array<string>  (ala Awk) and feeds the 
+Array to a method myclass.convert() for the type conversions.
+So does this need to be encapsulated as a class, or will Awk do the job as is?

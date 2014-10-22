@@ -1,24 +1,26 @@
 /* Outline for recommender system:
-We'll do the simplest case in which there are just two possible votes (+1,-1).
+We'll do the simplest case in which there are just two possible votes $m_{ij} = +1 if user $i$ liked movie $j$,
+$m_{ij} = -1$ if user $i$ disliked movie $j$, and $m_{ij} = 0$ if user $i$ has not seen movie $j$.
+
 1. Sort the sparse matrix in place by row, then copy and re-sort by column.  Then create a list of indices for the 
 row-sorted copy where the index marks the start of the row.  Do the same for the column-sorted copy.  Now we can 
 sequentially access any row or col of the matrix.
 
 2. Now fix a movie $j$ and form a dense (mostly zero) vector of the jth column, and pre-multiply by the transpose 
-of the sparse matrix to get a 
-vector $B_j$. The $k^{th}$  entry of $B_j$ is $b_{kj} := a_{kj} - d_{kj}$, ie. agreements - disagreements between 
-columns $k$ and $j$. Now do the same multiply, but ignoring signs to get a vector $C_j$.  The $k^{th}$ entry of $C_j$ 
-is $c_{kj} := a_{kj}+d_{kj}$, ie. agreements + disagreements.  The pair $B_j,C_j$ measures how similar movie j is to 
-all the other movies. We'll call it a "similarity pair". 
+of the sparse matrix to get a vector $B_j$. The $k^{th}$  entry of $B_j$ is $b_{kj} := a_{kj} - d_{kj}$, ie. 
+agreements - disagreements between columns $k$ and $j$. Now do the same multiply, but ignoring signs to get a 
+vector $C_j$.  The $k^{th}$ entry of $C_j$ is $c_{kj} := a_{kj}+d_{kj}$, ie. agreements + disagreements.  The pair 
+$(B_j,C_j)$ measures how similar movie $j$ is to all the other movies. We'll call it a "similarity pair". 
 
 3. For a recommender system, we fix a user $i$.  We want to find those movies $j$ which $i$ has not seen, but which 
-are most similar to the movies $i$ has seen. First compute similarity pairs  $B_k,C_k$ for all $k$ with 
-$m_{ik} \neq 0$, and form $\beta := \sum_km_{ik}B_k$ and $\gamma := \sum_kC_k$.  Then $\beta_j$ is the total number of 
-agreements-disagreements over all users between movie $j$ and  movies user $i$ liked, plus disagreements minus agreements between movie $j$ and movies user $i$ disliked.  Thus $b_j := \beta_j/\gamma_j$ is the bulge in favor of the hypothesis
- that user $i$ will like movie $j$.  We can sort the $b_j$ to get a list of recommendations for user $i$.
+are most similar to the movies $i$ likes, and most dissimilar to those he dislikes. First compute similarity pairs  
+$(B_k,C_k)$ for all movies $k$ seen by user $i$, i.e. with $m_{ik} \neq 0$, and form $\beta := \sum_km_{ik}B_k$ and 
+$\gamma := \sum_kC_k$.  
+Then $\beta_j$ is the total number of agreements-disagreements over all users between movie $j$ and  movies user $i$ 
+liked, plus disagreements minus agreements between movie $j$ and movies user $i$ disliked.  Thus 
+$b_j := \beta_j/\gamma_j$ is the bulge in favor of the hypothesis that user $i$ will like movie $j$.  We can sort 
+the $b_j$ to get a list of recommendations for user $i$.
 */
-
-
 #include "Matrix.h"
 #include "Awk.h"
 #include "GetOpt.h"
@@ -28,11 +30,12 @@ agreements-disagreements over all users between movie $j$ and  movies user $i$ l
 #include <string>
 using namespace std;
 
+
 int main(int argc, char** argv){
   string data = string("ml_data");
   int nlines = 100000; // defaults to all data
   int user = -1; // no user specified
-  int nrec = 5;
+  int nrec = 5; // default to 5 recommendations
   bool score_existing = false;
   bool dense_print = false;
   bool verbose = false;
@@ -78,7 +81,8 @@ int main(int argc, char** argv){
     if(A(i,1) > maxcol)maxcol = A(i,1);
     i++;
   }
-  if(i < nlines) A = A.slice(0,0,i,3); // if we didn't get as many entries as we though
+  if(i < nlines) A = A.slice(0,0,i,3); // if we didn't get as many entries as we thought
+
   matrix by_rows = A; // this will be sorted by rows
   //  if(verbose)cout << "as read:\n"<<A.slice(0,0,10,3); // print first ten lines
   SparseMatrix S(++maxrow,++maxcol,by_rows); // initialize the sparse matrix

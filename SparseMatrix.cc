@@ -29,7 +29,8 @@ void SparseMatrix::reheap(int i, int n) {// the children of this sub-heap are he
   }
 }
 
-Array<int> SparseMatrix::sort(void){ // sort entries by row. Set transpose flag to do col.s
+Array<int> SparseMatrix::sort(void){ // sort entries by row. (Set transpose flag to do col.s) 
+  // Return array of row starts
   int n = nentries();
   for(int i = n/2;i >= 0;i--)reheap(i,n); // make initial heap
   while(n > 1){ // swap first and last row index and reheap
@@ -37,23 +38,18 @@ Array<int> SparseMatrix::sort(void){ // sort entries by row. Set transpose flag 
     reheap(0,n);
   }
   //  cout <<"Entries:\n"<<Entries;
-  int last = -1;
-  Array<int> starts(nrows(),&last); // col. vector of starting row indices initialize to -1 i.e. row absent
-  int row = 0;
+  // OK, Entries is now sorted by row
+  int row = -1;
+  Array<int> starts(nrows(),&row); // array of starting row indices.  Initialize to -1 i.e. row absent
+  // starts[i] is the first Entry for row i 
   for(int i = 0;i < nentries();i++){
-    if((int)Entries(i,transposed) != last){
-      last = (int)Entries(i,transposed);
-      while(row != last)row++;
+    if((int)Entries(i,transposed) != row){// new row
+      row = (int)Entries(i,transposed);
       starts[row] = i;
     }
   }
   return starts;
 }  
-
-
-
-
-
 
 matrix SparseMatrix::operator*(const matrix& M){ // premultiply M by sparse matrix
   int m = transposed? _ncols:_nrows;
