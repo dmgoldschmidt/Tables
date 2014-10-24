@@ -39,15 +39,15 @@
 (global-set-key "\C-\\" 'help-for-help)
 ; bind ^H to delete
 (global-set-key "\C-h" 'delete-backward-char)
-(if window-system
-(if (not (x-display-color-p))
-        (progn
-  (set-face-foreground 'region "white")
-          (set-face-background 'region "black"))
-  (set-face-background 'modeline "yellow")
-  (set-face-background 'highlight "purple")
-   (set-face-foreground 'modeline "purple")
-))
+;(if window-system
+;(if (not (x-display-color-p))
+;        (progn
+;  (set-face-foreground 'region "white")
+;          (set-face-background 'region "black"))
+;  (set-face-background 'modeline "yellow")
+;  (set-face-background 'highlight "purple")
+;   (set-face-foreground 'modeline "purple")
+;))
 ;(load-library "/usr/share/emacs/21.4/lisp/hilit-chg.elc")
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
