@@ -3,9 +3,10 @@
 
 // NOTE:  SparseMatrix needs to be converted to a template, to properly handle both int and double matrices
 
-SparseMatrix::SparseMatrix(int m, int n, const matrix& A) : _nrows(m), _ncols(n), _nentries(A.nrows()), Entries(A), transposed(0) {
-    if(Entries.ncols() != 3) throw "SparseMatrix: input must have three columns\n";
-  }
+SparseMatrix::SparseMatrix(int m, int n, const matrix& A) : _nrows(m), _ncols(n), _nentries(A.nrows()), transposed(0) {
+  Entries = A.copy();
+  if(Entries.ncols() != 3) throw "SparseMatrix: input must have three columns\n";
+}
 
 void SparseMatrix::swap_rows(int i1, int i2){
   double temp;
@@ -29,7 +30,7 @@ void SparseMatrix::reheap(int i, int n) {// the children of this sub-heap are he
   }
 }
 
-Array<int> SparseMatrix::sort(void){ // sort entries by row. (Set transpose flag to do col.s) 
+Array<int> SparseMatrix::sort(void){ // sort Entries in place by row. (Set transpose flag to do col.s) 
   // Return array of row starts
   int n = nentries();
   for(int i = n/2;i >= 0;i--)reheap(i,n); // make initial heap

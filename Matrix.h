@@ -14,7 +14,7 @@ typedef Matrix<double> matrix;
 typedef Matrix<int> imatrix;
 
 class SparseMatrix {
-  const matrix& Entries; // A(m,0) = row index i, A(m,1) = col index j, A(m,2) = (i,j)-entry 
+  matrix Entries; // A(m,0) = row index i, A(m,1) = col index j, A(m,2) = (i,j)-entry 
   int _nrows;
   int _ncols;
   int _nentries; // no. of tabulated entries = no. of rows of A 
@@ -35,7 +35,7 @@ public:
   void set_transpose_flag(bool b){transposed = (int)b;}
   void swap_rows(int i1, int i2);
   void reheap(int i , int n);
-  Array<int> sort(void); // sort entries by row index 
+  Array<int> sort(void); // sort entries in place by row index, return row starts
   matrix abs_mult(const matrix& M); // premultiply M by *this, ignoring signs
 };
 
