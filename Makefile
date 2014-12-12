@@ -22,3 +22,7 @@ testSparse: testSparse.cc SparseMatrix.o Matrix.h util.o matrix.o
 	g++ $(CFLAGS) -o testSparse testSparse.cc SparseMatrix.o util.o matrix.o
 recommend: recommend.cc Matrix.h SparseMatrix.o Awk.o  matrix.o Matrix.h util.o GetOpt.o 
 	g++ $(CFLAGS) -o recommend recommend.cc Awk.o util.o matrix.o SparseMatrix.o GetOpt.o
+Recommender.o: Recommender.cc Recommender.h
+	g++ $(CFLAGS) -c Recommender.cc
+test_Recommender: test_Recommender.cc Recommender.o Matrix.h SparseMatrix.o Awk.o matrix.o Matrix.h util.o GetOpt.o
+	g++ $(CFLAGS) -o test_Recommender test_Recommender.cc Recommender.o Awk.o util.o matrix.o SparseMatrix.o GetOpt.o

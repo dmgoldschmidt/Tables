@@ -12,14 +12,13 @@ class Recommender {
   matrix c_vector; // total agreements + disagreements
   matrix similarity; // agr. - disagr. for a particular movie
   matrix dense_col; // temp column vector
-
   Recommender(const Recommender& R); // no copying
   Recommender& operator=(const Recommender& R);
+  bool verbose;
 public:
-  Recommender(const matrix& A);
-  ~Recommender(void);
-  const Heap<IndexPair<double> >& operator()(user, nrec); 
-//return top nrec recommendations for user <user>. 
+  Recommender(const matrix& A, bool v = false);
+  ~Recommender(void){};
+  const Heap<IndexPair<double> >& operator()(int user, int nrec); //return top nrec recommendations for user <user>. 
   double prob(int i, int j); // compute prob.(user i will like movie j) 
 };
 

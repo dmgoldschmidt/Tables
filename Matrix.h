@@ -12,32 +12,7 @@ template<typename SCALAR>
 class Matrix;
 typedef Matrix<double> matrix;
 typedef Matrix<int> imatrix;
-
-class SparseMatrix {
-  matrix Entries; // A(m,0) = row index i, A(m,1) = col index j, A(m,2) = (i,j)-entry 
-  int _nrows;
-  int _ncols;
-  int _nentries; // no. of tabulated entries = no. of rows of A 
-  int transposed;
-public:
-  SparseMatrix(int m, int n, const matrix& A);
-  matrix operator*(const matrix& M); // premultiply dense matrix M by sparse matrix *this
-  matrix svd1(int& r, int niters2 = 100, double eps = 1.0e-8, unsigned seed = 1);
-  matrix svd(int r, int niters = 100, double eps = 1.0e-8, unsigned seed = 1);
-  int row(int m) const;
-  int col(int m) const;
-  double entry(int m) const;
-   
-  int nrows(void) const;
-  int ncols(void) const;
-  int nentries(void) const;
-  void transpose(void){transposed ^= 1;} // flip transposed flag
-  void set_transpose_flag(bool b){transposed = (int)b;}
-  void swap_rows(int i1, int i2);
-  void reheap(int i , int n);
-  Array<int> sort(void); // sort entries in place by row index, return row starts
-  matrix abs_mult(const matrix& M); // premultiply M by *this, ignoring signs
-};
+class SparseMatrix;
 
 struct Givens{ // reset computes, applies, and stores the 2x2 rotation matrix T s.t. T(a,b) = (sqrt(a^2+b^2),0) 
   // rotate applies the above rotation to an arbitrary vector (x,y).
@@ -192,21 +167,8 @@ public:
   }
 
 
+  Matrix operator*(const SparseMatrix& A); // post-multiply by sparse matrix A // NOTE: only for SCALAR = double
 
-  Matrix operator*(const SparseMatrix& A){ // post-multiply by sparse matrix A // NOTE: only for SCALAR = double
-    double zero = 0;
-    if(_ncols != A.nrows()) throw "Sparse post-multiply dimension error\n";
-    Matrix B(_nrows,A.ncols(),&zero);
-    for(int m = 0;m < A.nentries();m++){
-      int j = A.row(m);
-      int k = A.col(m);
-      for(int i = 0;i < _nrows;i++){ 
-	B(i,k) += ENTRY(i,j)*A.entry(m);
-	//	cout << format("B(%d,%d) = %f\n",i,k,B(i,k));
-      }
-    }
-    return B;
-  }
 
   Matrix operator-(void) const {
     Matrix B(_nrows,_ncols);
@@ -239,6 +201,51 @@ public:
 #endif
 
 }; // end Matrix template
+
+class SparseMatrix {
+  int _nrows;
+  int _ncols;
+  int _nentries; // no. of tabulated entries = no. of rows of A 
+  int transposed;
+public:
+  matrix Entries; // A(m,0) = row index i, A(m,1) = col index j, A(m,2) = (i,j)-entry 
+  SparseMatrix(void){}
+  SparseMatrix(int m, int n, const matrix& A);
+  void reset(int m, int n, const matrix& A);
+  matrix operator*(const matrix& M); // premultiply dense matrix M by sparse matrix *this
+  matrix svd1(int& r, int niters2 = 100, double eps = 1.0e-8, unsigned seed = 1);
+  matrix svd(int r, int niters = 100, double eps = 1.0e-8, unsigned seed = 1);
+  int row(int m) const;
+  int col(int m) const;
+  double entry(int m) const;
+   
+  int nrows(void) const;
+  int ncols(void) const;
+  int nentries(void) const;
+  void transpose(void){transposed ^= 1;} // flip transposed flag
+  void set_transpose_flag(bool b){transposed = (int)b;}
+  void swap_rows(int i1, int i2);
+  void reheap(int i , int n);
+  int compare(int i, int j, int n);
+  Array<int> sort(void); // sort entries in place by row index, return row starts
+  matrix abs_mult(const matrix& M); // premultiply M by *this, ignoring signs
+};
+template<typename SCALAR>
+Matrix<SCALAR> Matrix<SCALAR>::operator*(const SparseMatrix& A){ // post-multiply by sparse matrix A // NOTE: only for SCALAR = double
+  double zero = 0;
+  if(_ncols != A.nrows()) throw "Sparse post-multiply dimension error\n";
+  Matrix B(_nrows,A.ncols(),&zero);
+  for(int m = 0;m < A.nentries();m++){
+    int j = A.row(m);
+    int k = A.col(m);
+    for(int i = 0;i < _nrows;i++){ 
+      B(i,k) += ENTRY(i,j)*A.entry(m);
+      //	cout << format("B(%d,%d) = %f\n",i,k,B(i,k));
+    }
+  }
+  return B;
+}
+
 
 template<typename SCALAR>
 std::ostream& operator <<(std::ostream& os, const Matrix<SCALAR>& M){

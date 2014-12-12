@@ -8,7 +8,7 @@
 #define MAXCHARS 1000
 #include <cmath>
 #include <vector>
-
+//#include <stdint.h>
 using namespace std;
 
 class StringSplitter { // Functor to split a C-string into fields using field separator fs.  NOTE: leading

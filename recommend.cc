@@ -94,7 +94,10 @@ int main(int argc, char** argv){
   S.transpose();
   Array<int> col_starts = S.sort();
   matrix by_cols = A.copy(); // sorted by cols
-  if(verbose)cout << "col sort:\n"<<by_cols.slice(0,0,10,3);
+  if(verbose){
+    cout << "col sort:\n"<<by_cols.slice(0,0,10,3);
+    exit(0);
+  }
   if(verbose)cout << "col_starts:\n"<<col_starts<<endl;
   S.transpose();
   Array<int> row_starts = S.sort();

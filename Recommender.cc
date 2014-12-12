@@ -1,3 +1,4 @@
+#include "Recommender.h"
 #include "Matrix.h"
 #include "Awk.h"
 #include "GetOpt.h"
@@ -7,7 +8,7 @@
 #include <string>
 using namespace std;
 
-Recommender::Recommender(const matrix& A){
+Recommender::Recommender(const matrix& A, bool v) : verbose(v){
   int maxrow = 0;
   int maxcol = 0;
   for(int i = 0;i < A.nrows();i++){
@@ -16,7 +17,7 @@ Recommender::Recommender(const matrix& A){
   }
   S.reset(++maxrow,++maxcol,A); // initialize the sparse matrix
   row_starts = S.sort();
-  by_rows = Entries.copy(); // save copy of Entries sorted by row
+  by_rows = S.Entries.copy(); // save copy of Entries sorted by row
   if(verbose)cout <<"Sparse matrix is "<< maxrow <<" x "<<maxcol<<" with "<< A.nrows() << " nonzero entries."<<endl;
   if(verbose)cout <<"row sort:\n"<<by_rows.slice(0,0,10,3);
   if(verbose)cout <<"row_starts:\n"<<row_starts<<endl;
@@ -24,7 +25,7 @@ Recommender::Recommender(const matrix& A){
   S.transpose();
   col_starts = S.sort();
   // Entries is now sorted by cols first, then rows 
-  if(verbose)cout << "col sort:\n"<<by_cols.slice(0,0,10,3);
+  if(verbose)cout << "col sort:\n"<<S.Entries.slice(0,0,10,3);
   if(verbose)cout << "col_starts:\n"<<col_starts<<endl;
   S.transpose(); // untranspose the matrix
 
@@ -36,6 +37,7 @@ Recommender::Recommender(const matrix& A){
 }
 double Recommender::prob(int user, int m){ // prob. user will like movie m
 
+  matrix& Entries = S.Entries;
   int sim = 0;
   double scnt = 0;
   for(int i = row_starts[user];by_rows(i,0) == user;i++){ //
