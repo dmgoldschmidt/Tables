@@ -272,5 +272,5 @@ double gram_schmidt(matrix& A, matrix& S, double eps){ // orthonormalize the col
   return error; // max value of |cos(\theta_i)|
 }
 
-void print_mat(const matrix& A){ cout <<"\n"<<A;}
+void print_mat(const matrix& A, int i1, int i2){ cout <<"\n"<<A.slice(i1,0,i2-i1+1,A.ncols());}
   

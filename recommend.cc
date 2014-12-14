@@ -83,31 +83,27 @@ int main(int argc, char** argv){
   }
   if(i < nlines) A = A.slice(0,0,i,3); // if we didn't get as many entries as we thought
 
-  matrix by_rows = A; // this will be sorted by rows
   //  if(verbose)cout << "as read:\n"<<A.slice(0,0,10,3); // print first ten lines
-  SparseMatrix S(++maxrow,++maxcol,by_rows); // initialize the sparse matrix
   if(user >= maxrow){
     cerr <<"No user "<<user<<". Bailing out.\n";
     exit(1);
   }
   if(verbose)cout <<"Sparse matrix is "<< maxrow <<" x "<<maxcol<<" with "<< i << " nonzero entries."<<endl;
-  S.transpose();
-  Array<int> col_starts = S.sort();
-  matrix by_cols = A.copy(); // sorted by cols
-  if(verbose){
-    cout << "col sort:\n"<<by_cols.slice(0,0,10,3);
-    exit(0);
-  }
-  if(verbose)cout << "col_starts:\n"<<col_starts<<endl;
-  S.transpose();
-  Array<int> row_starts = S.sort();
-
+  SparseMatrix S(++maxrow,++maxcol,A); // initialize the sparse matrix
+  Array<int> row_starts = S.sort(); // sorted by rows
   if(row_starts[user] == -1){
     cerr<<"No entries for user "<<user<<endl;
     exit(1);
   }
+  //if(verbose)cout <<"row_starts:\n"<<row_starts<<endl;
+  matrix by_rows = S.Entries.copy();
   if(verbose)cout <<"row sort:\n"<<by_rows.slice(0,0,10,3);
-  if(verbose)cout <<"row_starts:\n"<<row_starts<<endl;
+  S.transpose();
+  Array<int> col_starts = S.sort();
+  matrix by_cols = S.Entries.copy(); // sorted by cols
+  if(verbose)cout << "col sort:\n"<<by_cols.slice(0,0,10,3);
+  //if(verbose)cout << "col_starts:\n"<<col_starts<<endl;
+  S.transpose();
   matrix b_vector(S.ncols(),1,0); // total agreements - disagreements
   matrix c_vector(S.ncols(),1,0); // total agreements + disagreements
   matrix similarity(S.ncols(),1); // agr. - disagr. for a particular movie
@@ -127,14 +123,14 @@ int main(int argc, char** argv){
     dense_col.zero(); // zero the temp dense vector
     for(int k = col_starts[j];by_cols(k,1) == j;k++) dense_col(by_cols(k,0),0) = by_rows(i,2)*by_cols(k,2);
     similarity = S*dense_col;
-    if(verbose)cout << format("similarity vector for user %d, movie %d:\n",user,j)<<similarity<<endl;
+    // if(verbose)cout << format("similarity vector for user %d, movie %d:\n",user,j)<<similarity<<endl;
     b_vector += similarity;
     c_vector += S.abs_mult(dense_col);
   }    
-  if(verbose)cout << "b_vector:\n"<<b_vector;
-  if(verbose)cout << "\nc_vector:\n"<<c_vector;
-  if(verbose)cout << "bulge for user "<<user<<": ";
-  for(int i = 0;i < b_vector.nrows();i++) if(verbose)cout << format("%d: %f\n",i,b_vector(i,0)/c_vector(i,0));
+  //  if(verbose)cout << "b_vector:\n"<<b_vector;
+  // if(verbose)cout << "\nc_vector:\n"<<c_vector;
+  // if(verbose)cout << "bulge for user "<<user<<": ";
+  // for(int i = 0;i < b_vector.nrows();i++) if(verbose)cout << format("%d: %f\n",i,b_vector(i,0)/c_vector(i,0));
   IndexPair<double> pair;
   Heap<IndexPair<double> > topn(nrec);
   
@@ -148,9 +144,9 @@ int main(int argc, char** argv){
       }
     }
     if(!skip){
-      if(verbose)cout << "adding "<<i<<endl;
-      topn.add(IndexPair<double>(i,b_vector(i,0)/c_vector(i,0)));
-      if(verbose)topn.dump(0);
+      //if(verbose)cout << "adding "<<i<<endl;
+      topn.add(IndexPair<double>(i,b_vector(i,0)/c_vector(i,0) )); // sort by bulge
+      //if(verbose)topn.dump(0);
     }
   }
     
@@ -158,6 +154,6 @@ int main(int argc, char** argv){
   for(int i = 0;i < nrec;i++){
     cout << format("movie %d (pr %f, #votes %.0f)\n", topn[0].i, (topn[0].item + 1)/2, c_vector(topn[0].i,0));
     topn.pop();
-    if(verbose)topn.dump(0);
+    //if(verbose)topn.dump(0);
   }
 }

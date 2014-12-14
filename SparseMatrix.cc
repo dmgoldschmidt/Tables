@@ -3,6 +3,7 @@
 
 // NOTE:  SparseMatrix needs to be converted to a template, to properly handle both int and double matrices
 static int print_count = 0;
+
 SparseMatrix::SparseMatrix(int m, int n, const matrix& A) : _nrows(m), _ncols(n), _nentries(A.nrows()), transposed(0) {
   Entries = A.copy();
   if(Entries.ncols() != 3) throw "SparseMatrix: input must have three columns\n";
@@ -26,31 +27,37 @@ void SparseMatrix::swap_rows(int i1, int i2){
 }
 
 int SparseMatrix::compare(int i, int j, int n){ // find larger row index, or larger col. index if rows are equal
-  //  if(print_count++ > 10)exit(1);
-  int x = transposed;
-  //  cout << format("compare Entry(%d,%d) = (%.0f,%.0f) with Entry(%d,%d) = (%.0f,%.0f)\n",i,x,j,x,Entries(i,x), Entries(i,x^1), Entries(j,x),Entries(j,x^1));
-  if(j >= n || Entries(j,x) < Entries(i,x) || (Entries(j,x) == Entries(i,x) && Entries(j,x^1) < Entries(i,x^1))){
-    //    cout << format("returning %d\n",i);
+  int& x = transposed;
+  if(i >= n)return j; // we always have i >= j. If i >=n there is only one child, so return it
+  if(Entries(j,x) < Entries(i,x)){
+    //cout << format("returning %d\n",i);
     return i;
   }
-  else{
-    //    cout << format("returning %d\n",j);
+  if(Entries(j,x) > Entries(i,x)){
+    // cout <<format("returning %d\n",j);
     return j;
   }
+  //if(print_count++ > 10)exit(0);
+  // if equality, test the other column
+  //cout << format("compare Entry(%d,%d) = (%.0f,%.0f) with Entry(%d,%d) = (%.0f,%.0f)\n",i,x,j,x,Entries(i,x), Entries(i,x^1), Entries(j,x),Entries(j,x^1));
+  if(Entries(j,x^1) < Entries(i,x^1)){
+    //cout << format("returning %d\n",i);
+    return i;
+  }
+  //cout << format("returning %d\n",j);
+  return j;
 }
   
-      
-
 void SparseMatrix::reheap(int i, int n) {// the children of this sub-heap are heaps.  Make it a heap recursively
   int i1 = 2*i+1;
-  if(i1 >=n) return; 
+  if(i1 >=n) return; // there are no children
   int i2 = i1+1;
   
-  //  i2 = compare(i2,i1,n); // i2 is now the larger child
-  //  if(compare(i2,i,n) == i2){
+  i2 = compare(i2,i1,n); // i2 is now the larger child
+  if(compare(i2,i,n) == i2){
 
-  if(i2 >= n || Entries(i2,transposed) <  Entries(i1,transposed)) i2 = i1; // choose larger child
-  if(Entries(i,transposed) < Entries(i2,transposed)){ // we need parent >= larger child
+    //if(i2 >= n || Entries(i2,transposed) <  Entries(i1,transposed)) i2 = i1; // choose larger child
+    //if(Entries(i,transposed) < Entries(i2,transposed)){ // we need parent >= larger child
     swap_rows(i,i2); //we need parent >= larger child 
     reheap(i2,n); // recursively fix up child heap
   }
