@@ -20,13 +20,14 @@ Recommender::Recommender(const matrix& A, bool v) : verbose(v){
   by_rows = S.Entries.copy(); // save copy of Entries sorted by row
   if(verbose)cout <<"Sparse matrix is "<< maxrow <<" x "<<maxcol<<" with "<< A.nrows() << " nonzero entries."<<endl;
   if(verbose)cout <<"row sort:\n"<<by_rows.slice(0,0,10,3);
-  if(verbose)cout <<"row_starts:\n"<<row_starts<<endl;
+  //  if(verbose)cout <<"row_starts:\n"<<row_starts<<endl;
   // now sort by columns
   S.transpose();
   col_starts = S.sort();
+  by_cols = S.Entries.copy();
   // Entries is now sorted by cols first, then rows 
   if(verbose)cout << "col sort:\n"<<S.Entries.slice(0,0,10,3);
-  if(verbose)cout << "col_starts:\n"<<col_starts<<endl;
+  //  if(verbose)cout << "col_starts:\n"<<col_starts<<endl;
   S.transpose(); // untranspose the matrix
 
   //initialize working vectors
@@ -37,23 +38,19 @@ Recommender::Recommender(const matrix& A, bool v) : verbose(v){
 }
 double Recommender::prob(int user, int m){ // prob. user will like movie m
 
-  matrix& Entries = S.Entries;
   int sim = 0;
   double scnt = 0;
-  for(int i = row_starts[user];by_rows(i,0) == user;i++){ //
+  for(int i = row_starts[user];by_rows(i,0) == user;i++){
     int j = by_rows(i,1); // next movie rated by user
-    int l = col_starts[m]; // Entries(l,0) is a user who rated movie m
-    for(int k = col_starts[j];Entries(k,1) == j && Entries(l,1) == m;k++){ // Entries(k,0) is a user who rated movie j
-      while(Entries(l,1) == m){
-        if( Entries(l,0) == Entries(k,0)){
-          sim += Entries(m,2)*Entries(k,2)*by_rows(i,2); 
-          scnt++;
-          break;
-        }
-        l++;
+    int l = col_starts[m]; // by_cols(l,0) is a user who rated movie m
+    for(int k = col_starts[j];by_cols(k,1) == j && by_cols(l,1) == m;k++){ // by_cols(k,0) is a user who rated movie j
+      for(;by_cols(l,1)==m && by_cols(l,0) < by_cols(k,0);l++); // Did he also rate movie m?
+      if( by_cols(l,0) == by_cols(k,0)){ 
+        sim += by_cols(m,2)*by_cols(k,2)*by_rows(i,2); 
+        scnt++;
       }
     }
   }
-  return sim/scnt;
+  return (1+sim/scnt)/2;
 }
 

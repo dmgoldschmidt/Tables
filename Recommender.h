@@ -6,6 +6,7 @@
 class Recommender {
   SparseMatrix S;
   matrix by_rows;
+  matrix by_cols;
   Array<int> row_starts;
   Array<int> col_starts;
   matrix b_vector; // total agreements - disagreements
