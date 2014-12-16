@@ -40,6 +40,7 @@ double Recommender::prob(int user, int m){ // prob. user will like movie m
 
   int sim = 0;
   double scnt = 0;
+  double inc;
   for(int i = row_starts[user];by_rows(i,0) == user;i++){
     int j = by_rows(i,1); // next movie rated by user
     int l = col_starts[m]; // by_cols(l,0) is now the lowest numbered user who rated movie m
@@ -47,8 +48,8 @@ double Recommender::prob(int user, int m){ // prob. user will like movie m
       for(;by_cols(l,1)==m && by_cols(l,0) < by_cols(k,0);l++); // Did he also rate movie m?
       if(by_cols(l,1) != m) break; // out of movie m raters.  On to the next movie rated by our user
       if( by_cols(l,0) == by_cols(k,0)){ // OK, this user rated both movies 
-        sim += by_cols(l,2)*by_cols(k,2)*by_rows(i,2); 
-        scnt++;
+        sim += (inc = by_cols(l,2)*by_cols(k,2)*by_rows(i,2)); // inc = +-1 unless the entry has been zeroed out
+        scnt += inc*inc; // in case it's been set to zero
       }
     }
   }
