@@ -42,15 +42,17 @@ double Recommender::prob(int user, int m){ // prob. user will like movie m
   double scnt = 0;
   for(int i = row_starts[user];by_rows(i,0) == user;i++){
     int j = by_rows(i,1); // next movie rated by user
-    int l = col_starts[m]; // by_cols(l,0) is a user who rated movie m
+    int l = col_starts[m]; // by_cols(l,0) is now the lowest numbered user who rated movie m
     for(int k = col_starts[j];by_cols(k,1) == j && by_cols(l,1) == m;k++){ // by_cols(k,0) is a user who rated movie j
       for(;by_cols(l,1)==m && by_cols(l,0) < by_cols(k,0);l++); // Did he also rate movie m?
-      if( by_cols(l,0) == by_cols(k,0)){ 
-        sim += by_cols(m,2)*by_cols(k,2)*by_rows(i,2); 
+      if(by_cols(l,1) != m) break; // out of movie m raters.  On to the next movie rated by our user
+      if( by_cols(l,0) == by_cols(k,0)){ // OK, this user rated both movies 
+        sim += by_cols(l,2)*by_cols(k,2)*by_rows(i,2); 
         scnt++;
       }
     }
   }
+  cout << "prob: "<<(1+sim/scnt)/2<<" #votes: "<<scnt<<endl;
   return (1+sim/scnt)/2;
 }
 
