@@ -21,6 +21,8 @@ public:
   ~Recommender(void){};
   const Heap<IndexPair<double> >& operator()(int user, int nrec); //return top nrec recommendations for user <user>. 
   double prob(int i, int j); // compute prob.(user i will like movie j) 
+  bool get_entry(int i, int j, double& x);
+  void set_entry(int i, int j, double x = 0);
 };
 
 

@@ -53,7 +53,23 @@ double Recommender::prob(int user, int m){ // prob. user will like movie m
       }
     }
   }
-  cout << "prob: "<<(1+sim/scnt)/2<<" #votes: "<<scnt<<endl;
+  //  cout << "prob: "<<(1+sim/scnt)/2<<" #votes: "<<scnt<<endl;
   return (1+sim/scnt)/2;
 }
-
+bool Recommender::get_entry(int i, int j, double& x){
+  int r = row_starts[i];
+  while(by_rows(r,0) == i && by_rows(r,1) != j) r++;
+  if(by_rows(r,0) != i || by_rows(r,1) != j) return false;
+  x = by_rows(r,2);
+  return true;
+}
+void Recommender::set_entry(int i, int j, double x){
+  int r = row_starts[i];
+  while(by_rows(r,0) == i && by_rows(r,1) != j) r++;
+  if(by_rows(r,1) != j) return;
+  by_rows(r,2) = x;
+  int c = col_starts[j];
+  while(by_cols(c,1) == j && by_cols(c,0) != i) c++;
+  if(by_cols(c,1) != j || by_cols(c,0) != i) return;
+  by_cols(c,2) = x;
+}
