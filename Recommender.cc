@@ -54,7 +54,8 @@ double Recommender::prob(int user, int m){ // prob. user will like movie m
     }
   }
   //  cout << "prob: "<<(1+sim/scnt)/2<<" #votes: "<<scnt<<endl;
-  return (1+sim/scnt)/2;
+
+  return scnt? (1+sim/scnt)/2 : .5;
 }
 bool Recommender::get_entry(int i, int j, double& x){
   int r = row_starts[i];

@@ -50,6 +50,7 @@ int main(int argc, char** argv){
     exit(1);
   }
   matrix A(nlines,3,0);
+
   int i = 0;
   while(reader.next() && i < nlines){ // read it in
     A(i,0) = strtod(reader.field(0),NULL); // row index
@@ -68,7 +69,8 @@ int main(int argc, char** argv){
   Histogram<double> H(bins);
   
   double score = 0;
-  double entry;
+  double entry,pred_entry;
+  double right_wrong = 0;
   cout << "begin scoring loop\n";
   for(i = 0;i < nscores;i++){ // score the first nscores entries of A
     int row = A(i,0);
@@ -81,10 +83,13 @@ int main(int argc, char** argv){
     R.set_entry(row,col,0); // zero out the entry
     double prob = R.prob(row,col); // prob. user i likes movie j
     score += log(1+(2*prob-1)*entry); // 1+ log(p) if entry = 1, 1+log(1-p) if entry = -1
+    pred_entry = prob >= .5? 1:-1;
+    right_wrong += entry*pred_entry;
     H.add(prob,entry == 1); // update the histogram
     R.set_entry(row,col,entry); // restore entry
     //    cout << format("entry(%d,%d): %.0f prob: %.2f score: %.2f\n",row,col,entry,prob,score);
   }
   cout << "score: "<< score/(log(2)*nscores)<<" bits/bit\n"<<"counts: "<<H.counts<<"\nhits: "<<H.hits<<endl;
+  cout << 50*(1+right_wrong/nscores)<<"% correct"<<endl;
   cout << H;
 }
