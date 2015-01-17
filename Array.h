@@ -1,3 +1,37 @@
+/* This is a storage container that solves two common problems with arrays:
+ * 1. You can't pass them to or from a function efficiently.  The old C solution
+ * is to pass pointers, but this doesn't let the function construct an array and
+ * return it to the caller.  So the caller has to construct the array (often without 
+ * knowing how big it should be) and give the function a pointer to it.
+
+ * 2. You sometimes don't know how big the array should be in advance.  This problem is
+ * "solved" by the STL vector class, but the syntax using the push_back method is clumsy.
+
+ * The Array class solves both problems.  
+ * Solution to 1: An Array object just consists of a single pointer, so
+ * it can be passed around and copied efficiently. The pointer points to an internal ArrayBlock
+ * object on the heap, which among other things, keeps a reference count of how many Array objects
+ * are pointing to it. The refcount is updated by all assignment, copy-constructor, and destruction
+ * operations, and if and when it goes to zero the heap storage is released. 
+
+ * Solution to 2: Arrays are variable length.  If a reference is made to an Array location higher 
+ * than the currently allocated length, additional storage is allocated to accommodate that reference.
+ * To catch bugs and prevent enormous allocations,  the user can set a maximum length using the set_max_length
+ * method. This does not actually allocate any storage, it just sets a limit which generates an exception
+ * if the user tries to reference a location beyond the limit.
+ * The storage is organized as a linked list of fixed-length blocks, where the block-length is specified by the
+ * user in the constructor.  Example:
+
+ * Array<int> A(10);  // An initial block of 10 ints is allocated
+ * A[25] = 2; // two more blocks are added to the linked list to accommodate the reference
+ * A.set_max_length(100); 
+ * A[101] = 6; // exception thrown!
+
+ * So we can think of an Array as interpolating between an ordinary array and a linked list, with the block size
+ * being the interpolation parameter.  A small parameter is space-efficient but time-inefficient, while a large
+ * parameter is space-inefficient but time efficient.
+
+ */
 #ifndef ARRAY_H
 #define ARRAY_H
 #include <iostream>
@@ -13,6 +47,11 @@
 #endif
 
 
+struct ArrayBoundsError {
+  int bound;
+  int index;
+  ArrayBoundsError(int b, int i) : bound(b), index(i){}
+};
 
 template <typename ITEM>
 class Array; 
@@ -23,19 +62,21 @@ struct Initializer { // subclass this for a callback initialization functor
 };
 
 template <typename ITEM>
-struct SimpleInit : public Initializer<ITEM> { //like this -- just set up a pointer to some constant
+struct SimpleInit : public Initializer<ITEM> { //simple example: we just set up a pointer to some constant
   const ITEM* fill;
-  SimpleInit(const ITEM* p) : fill(p) {} // save the constant fill
+  SimpleInit(const ITEM* p) : fill(p) {} // save the pointer to the fill
   void operator()(ITEM& item){item = *fill;}
 };
 
 template <typename ITEM>
-class ArrayBlock{ 
-  friend class Array<ITEM>; // private helper class for Array
+class ArrayBlock{ // this is a private helper class for Array
+  friend class Array<ITEM>; 
   size_t n; // block size
   ITEM *data; // block of n items
   ArrayBlock* next; // pointer to next block
   uint refcount; // only used in the first block
+  int max_index; // ditto. If non-zero, bounds the total length
+  int highest_index; // ditto. Tracks the highest array loc. referenced so far
   Initializer<ITEM>* init; // user defined initialization functor
   const ITEM* fill; // alternative initialization to constant
 
@@ -46,18 +87,20 @@ class ArrayBlock{
   //   if(fill != nullptr)
   //     for(uint i = 0;i < n;i++)data[i] = *fill;
   // }
-  ArrayBlock(size_t nn, Initializer<ITEM>* in) : n(nn), next(nullptr), refcount(0), init(in), fill(nullptr) {
-
+ ArrayBlock(size_t nn, Initializer<ITEM>* in) : n(nn), next(nullptr), refcount(0), init(in), fill(nullptr),
+    max_index(-1), highest_index(-1){
+    // this constructor uses a user-defined initializer
     data = new ITEM[n];
     DBG(std::cout << format("new ArrayBlock at %x, data at %x\n",this,data);)
     if(init != nullptr)
       for(uint i = 0;i < n;i++)(*init)(data[i]); // call user-defined functor to initialize each ITEM 
   }
 
-  ArrayBlock(size_t nn, const ITEM* item) : n(nn), next(nullptr), refcount(0), init(nullptr), fill(item) {
-
+ ArrayBlock(size_t nn, const ITEM* item) : n(nn), next(nullptr), refcount(0), init(nullptr), fill(item),
+    max_index(-1), highest_index(-1){
+    // this constructor initializes to a user-defined constant
     data = new ITEM[n];
-    DBG(std::cout << format("new ArrayBlock at %x, data at %x\n",this,data);)
+    DBG(std::cout << format("new ArrayBlock object at %x, data at %x\n",this,data);)
     if(fill != nullptr)
       for(uint i = 0;i < n;i++)data[i] = *fill; // initialize with constant
   }
@@ -65,14 +108,14 @@ class ArrayBlock{
   ArrayBlock& operator=(const ArrayBlock&); //no assignment
 
   ~ArrayBlock(void){
-    DBG(std::cout << format("~ArrayBlock: deleting %x and %x\n",this,data);)
+    DBG(std::cout << format("~ArrayBlock: deleting object at  %x and data at %x\n",this,data);)
     delete[] data;
     if(next != nullptr)delete next;
   }
 
-  uint len(void){ // recursive 
-    return n + (next == nullptr? 0: next->len());
-  }
+  //  uint len(void){ // recursive 
+  //    return n + (next == nullptr? 0: next->len());
+  //  }
 
   size_t blocksize(void){return n;}
 
@@ -92,6 +135,7 @@ class ArrayBlock{
     return data[i];
   }
 };
+// Main code starts here
 
 template<typename ITEM> 
 class Array {
@@ -107,7 +151,8 @@ public:
   //   first->refcount = 1;
   //   DBG(std::cout << format("Array %x: first block at %x\n",this,first);)
   // }
-  Array(size_t n, Initializer<ITEM>* init) : first(new ArrayBlock<ITEM>(n,init)){
+ Array(size_t n, Initializer<ITEM>* init) : first(new ArrayBlock<ITEM>(n,init)){ // user supplies callback routine
+                                                                                 // to initialize each ITEM (see above)      
     first->refcount = 1;
     DBG(std::cout << format("Array %x: first block at %x\n",this,first);)
   }
@@ -115,16 +160,17 @@ public:
     first->refcount = 1;
     DBG(std::cout << format("Array %x: first block at %x\n",this,first);)
   }
-  Array(initializer_list<ITEM> l){
+  Array(initializer_list<ITEM> l){ // note: the allocation block size is the length of the list
     int n = l.size();
     first = new ArrayBlock<ITEM>(n,(ITEM*)NULL);
     first->refcount = 1;
     const ITEM* p = l.begin();
     for(int i = 0;i < l.size();i++)(*first)[i] = p[i];
+    first-> highest_index = l.size()-1;
   }
 
-  Array(const Array& A): first(A.first) {
-    if(first != nullptr) first->refcount++; // shallow copy
+  Array(const Array& A): first(A.first) { // shallow copy
+    if(first != nullptr) first->refcount++; 
     DBG(if(first != nullptr) std::cout << format("Array %x (Block %x) copy constr: refcount = %d\n",this,first,first->refcount);) 
    }
   ~Array(void){
@@ -156,21 +202,37 @@ public:
   Array copy(void) const{ // deep copy returning object 
     Array<ITEM> A;
     if(first != nullptr){
-      A.reset(first->n,first->init);
-      int n = len(); // only call recursive len once
-      for(int i = 0;i < n;i++) A[i] = this->operator[](i);
+      if(first->init != nullptr)A.reset(first->n,first->init); 
+      else A.reset(first->n,first->fill);
+      A->first->highest_index = first->highest_index;
+      A->first->max_index = first->max_index;
+      int n = first->highest_index; 
+      for(int i = 0;i < n;i++) A[i] = this->operator[](i); // copy the data.  This automagically allocates any 
+                                                           // needed extra blocks
     }
     return A;
   }
+  bool set_max_length(int m){ // max length = 0 means we're not bounding the length
+    if(first == nullptr || m <= first->highest_index ) return false; // no can do
+    first->max_index = m-1;
+    return true;
+  }
+  int max_length(void){
+    if(first == nullptr) return 0;
+    return first->max_index+1;
+  }
   int len(void) const {
     if(first == nullptr) return 0;
-    return first->len();
+    return first->highest_index+1;
   }
   ITEM& operator[](int i)const {
-    if(first == nullptr)throw "Array bounds error\n";
+    if(first == nullptr)throw ArrayBoundsError(-1,i);
+    if(first->max_index > -1 && i > first->max_index) throw ArrayBoundsError(first->max_index,i);
+    if(i > first->highest_index) first->highest_index = i;
     return first->operator[](i);
   }
   bool operator==(Array& A) const{
+    if(A.max_length() != max_length())return false;
     int n = len();
     if(n != A.len())return false;
     for(int i = 0;i < n;i++) if(this->operator[](i) != A[i])return false;
@@ -178,6 +240,7 @@ public:
   }
   bool operator!=(Array& A) const{return !operator==(A);}
 };
+
 
 template<typename ITEM>
 std::ostream& operator <<(std::ostream& os, Array<ITEM>& A){

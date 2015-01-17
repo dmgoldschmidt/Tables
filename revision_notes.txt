@@ -4,7 +4,7 @@
 with the new option.
 
 3. SparseMatrix needs to be a template so we can have 
-SparseMatrix<int>.  So the input to SparseMatrix<T> is an Array<Entry> where Entry has two members: 1) an array of two ints for row & col indices, 2) a type T item for the corresponding Matrix entry.
+SparseMatrix<int>.  So the input to SparseMatrix<T> is an Array<Entry<T>> where Entry<T> has three members: 1) two ints for row & col indices, 2) a type T item for the corresponding Matrix entry.
 
 4. We need to be able to read an arbitrary text file into an Array<myclass>, where the variable length feature of Array allows any number of lines to be read, and they need to be parsed into the data members of myclass in a generic way.  How to do this? 
 a) the user provides a format specification for the line conversions, or

@@ -28,3 +28,5 @@ test_Recommender: test_Recommender.cc Histogram.h Recommender.o Matrix.h SparseM
 	g++ $(CFLAGS) -o test_Recommender test_Recommender.cc Recommender.o Awk.o util.o matrix.o SparseMatrix.o GetOpt.o
 test_Histogram: test_Histogram.cc Histogram.h Array.h
 	g++ $(CFLAGS) -o test_Histogram test_Histogram.cc
+testArray: testArray.cc Array.h util.o
+	g++ $(CFLAGS) -o testArray testArray.cc util.o
