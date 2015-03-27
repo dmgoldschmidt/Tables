@@ -1,6 +1,6 @@
 #include "GetOpt.h"
 
-GetOpt::GetOpt(int argc, char** argv, char* help_msg){
+GetOpt::GetOpt(int argc, char** argv, char const* help_msg){
   bool opt_read = false; // parser state
 
   for(int i = 1;i < argc;i++){
@@ -23,36 +23,36 @@ GetOpt::GetOpt(int argc, char** argv, char* help_msg){
   if(opt_read)argument.push_back(""); // we ended with an option
 }
 
-int GetOpt::get(char* opt, int& arg){ // return integer argument
+int GetOpt::get(char const* opt, int& arg){ // return integer argument
   int nmatches = get(opt);
 
   if(nmatches == 1) arg = atoi(argument[j].c_str());
   return nmatches;
 }
 
-int GetOpt::get(char* opt, double& arg){ // return floating pt. argument
+int GetOpt::get(char const* opt, double& arg){ // return floating pt. argument
   int nmatches = get(opt);
 
   if(nmatches == 1) arg = atof(argument[j].c_str());
   return nmatches;
 }
 
-int GetOpt::get(char* opt, float& arg){ // return floating pt. argument
+int GetOpt::get(char const* opt, float& arg){ // return floating pt. argument
   int nmatches = get(opt);
 
   if(nmatches == 1) arg = atof(argument[j].c_str());
   return nmatches;
 }
 
-int GetOpt::get(char* opt, string& arg){// return string argument
+int GetOpt::get(char const* opt, string& arg){// return string argument
   int nmatches = get(opt);
 
   if(nmatches == 1) arg = argument[j];
   return nmatches;
 }
 
-int GetOpt::get(char* opt){ // look for option
-  int i,l;
+int GetOpt::get(char const* opt){ // look for option
+  uint i,l;
   int nmatches = 0;
 
   for(i = 0;i < option.size();i++){

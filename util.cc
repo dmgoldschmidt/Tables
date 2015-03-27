@@ -16,7 +16,7 @@ void deblank(char* p){ // eliminate ' ' and '\t' from string
   }
 } 
 
-int StringSplitter::operator()(char* record){
+int StringSplitter::operator()(char* record, char fs){
   nf = 1;
   field.clear();
   field.push_back(record); // set the first pointer
@@ -62,10 +62,10 @@ void split_string(char* line, std::vector<char*>& token, char fs){ // input: cha
 std::string format(const char* fstr,...){
   char buf[MAXCHARS+1]; // will truncate after MAXCHARS characters -- no buffer overflows
   va_list ptr;
-  int nchars;
+  //int nchars;
 
   va_start(ptr,fstr);
-  nchars = vsnprintf(buf,MAXCHARS,fstr,ptr);
+  /*nchars = */ vsnprintf(buf,MAXCHARS,fstr,ptr);
   //cout << "format: vsnprintf returns "<< nchars<<endl;
   va_end(ptr);
   std::string output(buf);

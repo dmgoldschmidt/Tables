@@ -4,7 +4,7 @@
  * return it to the caller.  So the caller has to construct the array (often without 
  * knowing how big it should be) and give the function a pointer to it.
 
- * 2. You sometimes don't know how big the array should be in advance.  This problem is
+* 2. You sometimes don't know how big the array should be in advance.  This problem is
  * "solved" by the STL vector class, but the syntax using the push_back method is clumsy.
 
  * The Array class solves both problems.  
@@ -13,6 +13,15 @@
  * object on the heap, which among other things, keeps a reference count of how many Array objects
  * are pointing to it. The refcount is updated by all assignment, copy-constructor, and destruction
  * operations, and if and when it goes to zero the heap storage is released. 
+ * For example, the following code looks really bad:
+ *    Array<double> foo(void){
+        Array<double> A(100000);
+        .......
+        return A;
+      }
+ * but it's actually fine.  The Array does not get copied by the return statement, nor does it
+ * get deleted when it appears to go out of scope, nor does it cause a memory leak by hanging
+ * around when it's no longer in use.  
 
  * Solution to 2: Arrays are variable length.  If a reference is made to an Array location higher 
  * than the currently allocated length, additional storage is allocated to accommodate that reference.
@@ -39,7 +48,7 @@
 //#include <vector>
 #include "util.h"
 //#define DEBUG
-
+#undef DEBUG
 #ifdef DEBUG
 #define DBG(x) x
 #else
@@ -87,8 +96,8 @@ class ArrayBlock{ // this is a private helper class for Array
   //   if(fill != nullptr)
   //     for(uint i = 0;i < n;i++)data[i] = *fill;
   // }
- ArrayBlock(size_t nn, Initializer<ITEM>* in) : n(nn), next(nullptr), refcount(0), init(in), fill(nullptr),
-    max_index(-1), highest_index(-1){
+ ArrayBlock(size_t nn, Initializer<ITEM>* in) : n(nn), next(nullptr), refcount(0), 
+    max_index(-1), highest_index(-1), init(in), fill(nullptr) {
     // this constructor uses a user-defined initializer
     data = new ITEM[n];
     DBG(std::cout << format("new ArrayBlock at %x, data at %x\n",this,data);)
@@ -96,8 +105,8 @@ class ArrayBlock{ // this is a private helper class for Array
       for(uint i = 0;i < n;i++)(*init)(data[i]); // call user-defined functor to initialize each ITEM 
   }
 
- ArrayBlock(size_t nn, const ITEM* item) : n(nn), next(nullptr), refcount(0), init(nullptr), fill(item),
-    max_index(-1), highest_index(-1){
+ ArrayBlock(size_t nn, const ITEM* item) : n(nn), next(nullptr), refcount(0),
+    max_index(-1), highest_index(-1),  init(nullptr), fill(item) {
     // this constructor initializes to a user-defined constant
     data = new ITEM[n];
     DBG(std::cout << format("new ArrayBlock object at %x, data at %x\n",this,data);)

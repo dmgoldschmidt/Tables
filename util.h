@@ -8,21 +8,38 @@
 #define MAXCHARS 1000
 #include <cmath>
 #include <vector>
-//#include <stdint.h>
+#include <stdint.h>
 using namespace std;
+
+class LCG64 {
+  const uint64_t a;
+  const uint64_t b;
+  uint64_t x;
+  double uint64_max;
+public:
+  LCG64(uint64_t seed = 0) : a(2862933555777941757), b(3037000493), x(seed), uint64_max((double)UINT64_MAX){
+    for(int i = 0;i < 10;i++)step(); // avoid crappy seeds
+  }
+  uint64_t step(void){return x = a*x+b;}
+  double uniform(void){ return step()/uint64_max;}
+};
+
+
+
+
 
 class StringSplitter { // Functor to split a C-string into fields using field separator fs.  NOTE: leading
   // blanks in a field are skipped, so the field separator  is really fs followed by any number of blanks.
   // If fs == ' ', the splitter will also recognize '\t'.  If fs == '\t', ONLY '\t' is recognized.
-
-  char fs; // field separator
   int nf; // no. of fields split out
   vector<char*> field; // array of ptrs to fields
 public:
- StringSplitter(char fs0 = ' '): fs(fs0), nf(0), field(10) {} // allocate 10 fields just to get started
-  int operator()(char* record); // input a record, return nf (Note: fs is over-written with '\0', making
-  // record a sequence of C-strings)
-  char* operator[](int i);
+  StringSplitter(void):  nf(0), field(10) {} // allocate 10 fields just to get started
+  int operator()(char* record,char fs = ' '); /* input a record, split into fields using field separator fs, 
+                                               * return nf (Note: fs is over-written with '\0', making
+                                               * record a sequence of C-strings)*/
+  char* operator[](int i); // subsequent access to the fields
+
 };
 
 
@@ -56,6 +73,7 @@ public:
   String(const char* p) : std::string(p){}
   uint32_t hash(uintptr_t salt = 0) const; // hash function
   uint32_t hash1(uintptr_t salt = 0) const; // hash function
+  operator int() const{ return hash();}
   template<typename T>
   String(const T& x){ // also add type conversions from int, double, char, and other classes 
     std::stringstream iss;

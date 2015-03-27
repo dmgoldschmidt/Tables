@@ -43,11 +43,11 @@ public:
   vector<string> option;
   vector<string> argument;
 
-  GetOpt(int argc, char** argv, char* help_msg = "No help available\n");
-  int get(char* opt); // return nmatches = no. of matches for opt
-  int get(char* opt, int& arg);   // return nmatches  and set integer arg iff nmatches == 1
-  int get(char* opt, double& arg);// ditto for double 
-  int get(char* opt, float& arg);// ditto for float 
-  int get(char* opt, string& arg);// ditto for string
+  GetOpt(int argc, char** argv, char const* help_msg = "No help available\n");
+  int get(char const* opt); // return nmatches = no. of matches for opt
+  int get(char const* opt, int& arg);   // return nmatches  and set integer arg iff nmatches == 1
+  int get(char const* opt, double& arg);// ditto for double 
+  int get(char const* opt, float& arg);// ditto for float 
+  int get(char const* opt, string& arg);// ditto for string
 };
 #endif

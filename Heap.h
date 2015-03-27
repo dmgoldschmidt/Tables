@@ -9,14 +9,17 @@ template<typename T>
 class Heap { 
   /* Manages an n-long heap of arbitrary (type T) items online.  Normal usage is to track online the n smallest 
   items from an arbitrary number of items seen one at a time.  The (implicit) heap structure is that the children
-  of item[i] are item[2*i+1] and item[2*i+2] (so the parent is item[(i-1)/2]).  Data is added via the add method.  When the
-  Heap is full, the new item is added iff it is smaller than the largest item currently in the heap, which it replaces.
+  of item[i] are item[2*i+1] and item[2*i+2] (so the parent is item[(i-1)/2]).  Data is added via the add method.  
+  When the Heap is full, the new item is added iff it is smaller than the largest item currently in the heap, which 
+  it replaces.
   
-  With the alternate constructor, the user provides a pre-allocated array of items.  In this mode, the class operates directly
-  on the user-supplied array and not on a copy, so the user has write access to the array.  Caution is required here -- if the
-  user does not maintain the heap structure, incorrect results can follow.  Thus, the user should
-  either: a) enter data into the array only with the 'push' or add methods, or b) run the 'heap' method after any data is modified.
-  A standard use of this mode is to just call the 'sort' method, which will do an in-place nlog(n) sort on the array.
+  With the alternate constructor, the user provides a pre-allocated array of items.  In this mode, the class 
+  operates directly on the user-supplied array and not on a copy, so the user has write access to the array.  
+  Caution is required here -- if the user does not maintain the heap structure, incorrect results can follow.  
+  Thus, the user should either: a) enter data into the array only with the 'push' or add methods, or b) run the 
+  'heap' method after any data is modified.
+  A standard use of this mode is to just call the 'sort' method, which will do an in-place nlog(n) sort on the 
+  array.
   */
 protected:
   int length; // max. no. of entries
