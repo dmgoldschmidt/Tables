@@ -132,7 +132,7 @@ public:
     return B;
   }
   Matrix operator*(const Matrix& A)const {
-    if(_nrows != A.nrows() || _ncols != A.ncols()) throw "Matrix operator* dimension error\n";
+    if(_ncols != A.nrows()) throw "Matrix operator* dimension error\n";
     Matrix B(_nrows,A._ncols);
 
     for(int i = 0;i < _nrows;i++){

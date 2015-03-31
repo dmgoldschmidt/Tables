@@ -11,20 +11,53 @@
 #include <stdint.h>
 using namespace std;
 
-class LCG64 {
+class LCG64 { // 64-bit LCG. Parameters from Wikipedia
   const uint64_t a;
   const uint64_t b;
   uint64_t x;
   double uint64_max;
 public:
-  LCG64(uint64_t seed = 0) : a(2862933555777941757), b(3037000493), x(seed), uint64_max((double)UINT64_MAX){
-    for(int i = 0;i < 10;i++)step(); // avoid crappy seeds
+  LCG64(uint64_t seed = 0) : a(2862933555777941757), b(3037000493), uint64_max((double)UINT64_MAX){
+    reseed(seed);
   }
   uint64_t step(void){return x = a*x+b;}
   double uniform(void){ return step()/uint64_max;}
+  uint64_t reseed(uint64_t seed){
+    x = seed;
+    for(int i = 0;i < 10;i++)step(); // avoid crappy seeds
+    return step();
+  }
 };
 
-
+class BloomFilter { // Have we seen a 64-bit key or a string yet? Remember it for next time
+  uint64_t word[4];
+  LCG64 lcg;
+ public:
+  BloomFilter(void){}
+  bool hash(uint64_t key, bool set = true){
+    bool ret = true;
+    uint64_t hash = lcg.reseed(key);
+    for(int i = 0;i < 8;i++){
+      int j = hash & 3; // low order 2-bits
+      hash >>= 2;
+      uint64_t mask  = 1<<(hash & (0x3f)); // next six bits
+      if(mask&word[j] == 0) ret = false; // not yet set
+      if(set) word[j] |= mask; // set it
+    }
+    return ret;
+  }
+  bool hash(string& s, bool set = true){
+    uint64_t hval = 0;
+    for(int i = 0;i < s.len();i++){
+      hval ^= (s[i] << (i%8));
+      return hash(hval);
+    }
+  }
+  bool query(uint64_t key){return hash(key,false);}
+  bool query(string& s){return hash(s,false);}
+};
+      
+      
 
 
 

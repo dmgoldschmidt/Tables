@@ -16,19 +16,37 @@ void deblank(char* p){ // eliminate ' ' and '\t' from string
   }
 } 
 
+// int StringSplitter::operator()(char* record, char fs){
+//   nf = 1;
+//   field.clear();
+//   while(isspace(*record)record++;  //skip initial whitespace
+//   field.push_back(record); // set the first pointer
+//   while(*record){
+//     if( (fs == ' ' && isspace(*record)) || *record == fs){ // terminate string and store next start position
+//       *record++ = '\0'; // replace fs with \0
+//       while(isspace(*record))record++; // skip leading whitespace
+//       if(*record){
+//         field.push_back(record);
+//         nf++;
+//       }
+//     }
+//     else record++;
+//   }
+//   return nf;
+// }
+
 int StringSplitter::operator()(char* record, char fs){
-  nf = 1;
+  nf = 0;
   field.clear();
-  field.push_back(record); // set the first pointer
-  while(*record){
-    if( (fs == ' ' && *record == '\t') || *record == fs){ // terminate string and store next start position
-      *record = '\0';
-      while(isblank(*++record)); // skip leading blanks
-      field.push_back(record);
+  do{
+    while(isspace(*record))record++;  //skip leading whitespace
+    if(*record){
+      field.push_back(record); // set the next pointer
       nf++;
     }
-    else record++;
-  }
+    while(*record && *record != fs)record++; // skip forward to next field sep or eol
+    if(*record) *record++ = '\0'; // replace fs with '\0'
+  }while(*record);
   return nf;
 }
 
